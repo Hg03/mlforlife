@@ -1,0 +1,58 @@
+# ============================================================================
+#
+# The configuration produced by default is meant to highlight the features
+# that Zensical provides and to serve as a starting point for your own
+# projects.
+#
+# ============================================================================
+
+[project]
+
+site_name = "mlforlife"
+site_description = "Prepare for your AI/ML Interviews together."
+site_author = "Harish Gehlot"
+copyright = "&copy; 2026 Harish Gehlot"
+
+extra_javascript = [
+    "javascripts/mathjax.js",
+    "https://unpkg.com/mathjax@3/es5/tex-mml-chtml.js"
+]
+[project.markdown_extensions.pymdownx.arithmatex]
+generic = true
+
+[project.theme.icon]
+logo = "lucide/gpu"
+
+nav = [
+  {"Get Started" = "index.md"},
+  {"Python Essentials" = "1_python_essentials.md"},
+  {"Oops & DBMS" = "2_oops_dbms.md"},
+  {"ML Algorithms" = "3_algorithms.md"}
+]
+
+[project.markdown_extensions]
+footnotes = {}
+
+[project.theme]
+features = [
+    "content.footnote.tooltips",
+    "content.code.copy"
+]
+
+[project.markdown_extensions.pymdownx.highlight]
+anchor_linenums = true
+line_spans = "__span"
+pygments_lang_class = true
+[project.markdown_extensions.pymdownx.inlinehilite]
+[project.markdown_extensions.pymdownx.snippets]
+[project.markdown_extensions.pymdownx.superfences]
+
+[[project.theme.palette]] 
+scheme = "default"
+toggle.icon = "lucide/sun"
+toggle.name = "Switch to dark mode"
+
+[[project.theme.palette]]
+scheme = "slate"
+toggle.icon = "lucide/moon"
+toggle.name = "Switch to light mode"
