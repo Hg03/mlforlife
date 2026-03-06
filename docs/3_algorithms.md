@@ -8,8 +8,6 @@ icon: lucide/vault
 
 ---
 
-## icon: lucide/vault
-
 # Linear Regression
 
 ## Fundamentals of Linear Regression
