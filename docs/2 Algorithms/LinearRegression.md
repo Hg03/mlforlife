@@ -91,7 +91,7 @@ $$\beta_j := \beta_j - \alpha \frac{\partial}{\partial \beta_j} J(\beta)$$
 
 * **Outliers:** Linear regression is sensitive to outliers because of the squaring of errors. Always check your residuals.
 
-## [Quick PDF version](https://github.com/Hg03/mlforlife/blob/main/docs/pdfs/Linear_Regression_Mechanics.pdf)
+### [Quick PDF version](https://github.com/Hg03/mlforlife/blob/main/docs/pdfs/Linear_Regression_Mechanics.pdf)
 
 
 

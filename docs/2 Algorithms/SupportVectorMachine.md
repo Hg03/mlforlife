@@ -97,3 +97,5 @@ Since SVMs are binary by nature, they handle multiple classes using two main str
 
 * **One-vs-Rest (OvR):** Trains one classifier per class against all others.
 * **One-vs-One (OvO):** Trains a classifier for every possible pair of classes.
+
+### [Quick PDF Version]()

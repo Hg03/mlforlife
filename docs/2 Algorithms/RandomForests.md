@@ -73,3 +73,5 @@ Random Forests are highly interpretable because they reveal which variables driv
 * **Overfitting:** Explain that while individual trees overfit, the forest as a whole does not because the errors of diverse trees average out.
 * **Scaling:** Mention that Random Forests (like Decision Trees) do **not** require feature scaling.
 * **Correlation:** Be ready to explain that feature randomness is used specifically to **de-correlate** the trees, making the ensemble more robust.
+
+### [Quick PDF Version]()

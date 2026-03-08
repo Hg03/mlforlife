@@ -93,3 +93,5 @@ XGBoost offers three ways to rank features:
 3. **Robustness:** Tune `gamma` to control pruning.
 4. **Randomness:** Tune `subsample` and `colsample_bytree`.
 5. **Refine:** Lower the `learning_rate` and increase the number of trees for final performance.
+
+### [Quick PDF Version]()
