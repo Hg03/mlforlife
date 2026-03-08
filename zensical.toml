@@ -25,9 +25,13 @@ logo = "lucide/gpu"
 
 nav = [
   {"Get Started" = "index.md"},
-  {"Python Essentials" = "1_python_essentials.md"},
-  {"Oops & DBMS" = "2_oops_dbms.md"},
-  {"ML Algorithms" = "3_algorithms.md"}
+  {"1.Basics" = ["1 Basics/PythonEssentials.md", "Basics/OopsDbms.md"]},
+  {"ML Algorithms" = ["2 Algorithms/LinearRegression.md",
+   "2 Algorithms/LogisticRegression.md",
+    "2 Algorithms/SupportVectorMachine.md",
+    "2 Algorithms/DecisionTree.md",
+    "2 Algorithms/RandomForests.md",
+    "2 Algorithms/XGBoost.md"]}, 
 ]
 
 [project.markdown_extensions]
