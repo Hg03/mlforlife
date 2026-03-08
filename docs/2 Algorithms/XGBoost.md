@@ -94,4 +94,4 @@ XGBoost offers three ways to rank features:
 4. **Randomness:** Tune `subsample` and `colsample_bytree`.
 5. **Refine:** Lower the `learning_rate` and increase the number of trees for final performance.
 
-### [Quick PDF Version]()
+### [Quick PDF Version](https://github.com/Hg03/mlforlife/blob/main/docs/pdfs/XGBoost_The_Tabular_Gold_Standard.pdf)

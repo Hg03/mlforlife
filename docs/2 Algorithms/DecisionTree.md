@@ -89,4 +89,4 @@ A tree that grows too deep will memorize the training data (High Variance). We c
 * **Imbalanced Data:** Trees are biased toward the majority class. Use `class_weight='balanced'` or resampling techniques like **SMOTE**.
 * **Feature Importance:** Trees naturally rank features based on how much they reduce impurity. This is a powerful tool for feature selection.
 
-### [Quick PDF Version]()
+### [Quick PDF Version](https://github.com/Hg03/mlforlife/blob/main/docs/pdfs/Mastering_Decision_Trees.pdf)

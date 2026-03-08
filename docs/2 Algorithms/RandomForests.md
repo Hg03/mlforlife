@@ -74,4 +74,4 @@ Random Forests are highly interpretable because they reveal which variables driv
 * **Scaling:** Mention that Random Forests (like Decision Trees) do **not** require feature scaling.
 * **Correlation:** Be ready to explain that feature randomness is used specifically to **de-correlate** the trees, making the ensemble more robust.
 
-### [Quick PDF Version]()
+### [Quick PDF Version](https://github.com/Hg03/mlforlife/blob/main/docs/pdfs/Mastering_Random_Forests.pdf)

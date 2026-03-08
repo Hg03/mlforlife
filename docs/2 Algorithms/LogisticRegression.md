@@ -96,3 +96,5 @@ To prevent overfitting, we add penalty terms:
 * **Imbalanced Data:** Accuracy is a trap! Use **SMOTE**, adjust **class weights**, or focus on **Precision-Recall curves**.
 * **Interpreting Coefficients:** Exponentiate the coefficients ($e^{\beta}$) to get the **Odds Ratio**. An odds ratio of 1.2 means a 1-unit increase in $X$ increases the odds of the outcome by 20%.
 * **Calibration:** Use **Platt Scaling** or **Isotonic Regression** if your predicted probabilities don't match real-world frequencies.
+
+### [Quick PDF Version](https://github.com/Hg03/mlforlife/blob/main/docs/pdfs/Mastering_Logistic_Regression.pdf)
