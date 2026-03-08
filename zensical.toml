@@ -34,6 +34,21 @@ nav = [
     "2 Algorithms/XGBoost.md"]}, 
 ]
 
+[[project.extra.social]]
+icon = "fontawesome/solid/paper-plane"
+link = "mailto:gehloth03@gmail.com"
+name = "Drop me a Mail"
+
+[[project.extra.social]]
+icon = "fontawesome/brands/github"
+link = "https://github.com/Hg03"
+name = "Github Repo"
+
+[[project.extra.social]]
+icon = "fontawesome/brands/linkedin"
+link = "https://linkedin.com/in/harishgehlot"
+name = "LinkedIn"
+
 [project.markdown_extensions]
 footnotes = {}
 
