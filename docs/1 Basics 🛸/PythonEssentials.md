@@ -1,5 +1,5 @@
 ---
-icon: lucide/container
+icon: lucide/file-terminal
 ---
 
 # 1. Python Essentials

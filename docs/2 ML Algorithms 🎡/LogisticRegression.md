@@ -1,5 +1,5 @@
 ---
-icon: lucide/vault
+icon: lucide/line-squiggle
 ---
 
 # 2. Logistic Regression

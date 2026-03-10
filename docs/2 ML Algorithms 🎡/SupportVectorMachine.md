@@ -1,5 +1,5 @@
 ---
-icon: lucide/vault
+icon: lucide/spline-pointer
 ---
 
 # 3. Support Vector Machines (SVM)

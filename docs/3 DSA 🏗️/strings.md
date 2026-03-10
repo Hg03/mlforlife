@@ -1,5 +1,5 @@
 ---
-icon: lucide/vault
+icon: lucide/zodiac-scorpio
 ---
 
 # 2. String

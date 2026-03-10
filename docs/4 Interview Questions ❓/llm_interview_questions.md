@@ -1,5 +1,5 @@
 ---
-icon: lucide/vault
+icon: lucide/folder-symlink
 ---
 
 # 2. LLM Interview Questions

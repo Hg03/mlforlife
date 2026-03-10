@@ -1,5 +1,5 @@
 ---
-icon: lucide/vault
+icon: lucide/file-code-corner
 ---
 
 # 1. ML Interview Questions

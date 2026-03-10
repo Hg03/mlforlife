@@ -1,5 +1,5 @@
 ---
-icon: lucide/vault
+icon: lucide/square-minus
 ---
 
 # 1. Linear Regression

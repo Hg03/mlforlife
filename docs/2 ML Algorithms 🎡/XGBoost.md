@@ -1,5 +1,5 @@
 ---
-icon: lucide/vault
+icon: lucide/chevrons-up
 ---
 
 # 6. XGBoost

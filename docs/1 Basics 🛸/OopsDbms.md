@@ -1,5 +1,5 @@
 ---
-icon: lucide/between-horizontal-end
+icon: lucide/database-zap
 ---
 
 # 2. OOPS & DBMS

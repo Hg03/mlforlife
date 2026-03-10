@@ -1,5 +1,5 @@
 ---
-icon: lucide/vault
+icon: lucide/tree-pine
 ---
 
 # 4. Decision Trees

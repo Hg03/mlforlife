@@ -1,5 +1,5 @@
 ---
-icon: lucide/vault
+icon: lucide/trees
 ---
 
 # 5. Random Forests
