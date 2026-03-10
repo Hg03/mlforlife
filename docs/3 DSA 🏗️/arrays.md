@@ -2,7 +2,7 @@
 icon: lucide/vault
 ---
 
-# Array
+# 1. Array
 
 ## Brief
 
