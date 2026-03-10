@@ -73,3 +73,16 @@ class Solution:
 
         return len(stack) == 0
 ```
+
+## [Longest Substring Without Repeating Character](https://leetcode.com/problems/longest-substring-without-repeating-characters/)
+
+
+## [Palindromic Substrings](https://leetcode.com/problems/palindromic-substrings/)
+
+## [Longest Palindromic Substring](https://leetcode.com/problems/longest-palindromic-substring/)
+
+## [Longest Repeating Character Replacement](https://leetcode.com/problems/longest-repeating-character-replacement/)
+
+## [Minimum Window Substring](https://leetcode.com/problems/minimum-window-substring/)
+
+## [Encode and Decode Substrings](https://leetcode.com/problems/encode-and-decode-strings/)
