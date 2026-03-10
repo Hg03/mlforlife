@@ -1,5 +1,5 @@
 ---
-icon: lucide/shelving-unit
+icon: lucide/beaker
 ---
 
 # 1. Array
