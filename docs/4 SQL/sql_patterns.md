@@ -9,14 +9,14 @@ icon: lucide/file-code-corner
 
 **Sample Input**
 | user_id | event_time |
-| :--- | :--- |
+|---- |---- |
 | U-1045 | 2023-10-01 10:00 |
 | U-1045 | 2023-10-01 10:15 |
 | U-1045 | 2023-10-01 11:10 |
 
 **Sample Output**
 | user_id | event_time | session_id |
-| :--- | :--- | :--- |
+|---- |---- |---- |
 | U-1045 | 2023-10-01 10:00 | 1 |
 | U-1045 | 2023-10-01 10:15 | 1 |
 | U-1045 | 2023-10-01 11:10 | 2 |
@@ -44,7 +44,7 @@ FROM (
 
 **Sample Input**
 | customer_id | month | amount |
-| :--- | :--- | :--- |
+|---- |---- |---- |
 | C-992 | 2023-01 | 50.00 |
 | C-992 | 2023-02 | 120.00 |
 | C-114 | 2023-01 | 80.00 |
@@ -52,7 +52,7 @@ FROM (
 
 **Sample Output**
 | customer_id |
-| :--- |
+|---- |
 | C-992 |
 
 **Query**
@@ -73,14 +73,14 @@ WHERE amount > prev_amt;
 
 **Sample Input**
 | customer_id | order_date |
-| :--- | :--- |
+|---- |---- |
 | C-105 | 2023-11-03 |
 | C-105 | 2023-11-04 |
 | C-202 | 2023-11-10 |
 
 **Sample Output**
 | customer_id |
-| :--- |
+|---- |
 | C-105 |
 
 **Query**
@@ -102,14 +102,14 @@ WHERE DATEDIFF(day, prev_date, order_date) = 1;
 
 **Sample Input**
 | customer_id | activity_date |
-| :--- | :--- |
+|---- |---- |
 | U-801 | 2024-02-15 |
 | U-801 | 2024-03-05 |
 | U-802 | 2024-02-20 |
 
 **Sample Output**
 | customer_id |
-| :--- |
+|---- |
 | U-802 |
 
 **Query**
@@ -133,14 +133,14 @@ AND a.customer_id NOT IN (
 
 **Sample Input**
 | customer_id | order_date |
-| :--- | :--- |
+|---- |---- |
 | C-44 | 2023-01-10 |
 | C-44 | 2023-02-15 |
 | C-55 | 2023-01-20 |
 
 **Sample Output**
 | customer_id |
-| :--- |
+|---- |
 | C-44 |
 
 **Query**
@@ -159,7 +159,7 @@ HAVING COUNT(DISTINCT MONTH(order_date)) =
 
 **Sample Input**
 | id |
-| :--- |
+|---- |
 | 1001 |
 | 1002 |
 | 1004 |
@@ -167,7 +167,7 @@ HAVING COUNT(DISTINCT MONTH(order_date)) =
 
 **Sample Output**
 | missing_id |
-| :--- |
+|---- |
 | 1003 |
 
 **Query**
@@ -186,7 +186,7 @@ AND o1.id < (SELECT MAX(id) FROM orders);
 
 **Sample Input**
 | user_id | login_date |
-| :--- | :--- |
+|---- |---- |
 | U-77 | 2023-10-01 |
 | U-77 | 2023-10-02 |
 | U-77 | 2023-10-03 |
@@ -194,7 +194,7 @@ AND o1.id < (SELECT MAX(id) FROM orders);
 
 **Sample Output**
 | user_id |
-| :--- |
+|---- |
 | U-77 |
 
 **Query**
@@ -217,13 +217,13 @@ HAVING COUNT(*) >= 3;
 
 **Sample Input**
 | category | revenue |
-| :--- | :--- |
+|---- |---- |
 | Phones | 50000 |
 | Laptops | 150000 |
 
 **Sample Output**
 | category | pct |
-| :--- | :--- |
+|---- |---- |
 | Phones | 25.0 |
 | Laptops | 75.0 |
 
@@ -243,13 +243,13 @@ GROUP BY category;
 
 **Sample Input**
 | order_id | order_date | delivery_date |
-| :--- | :--- | :--- |
+|---- |---- |---- |
 | ORD-1 | 2023-12-01 | 2023-12-02 |
 | ORD-2 | 2023-12-01 | 2023-12-05 |
 
 **Sample Output**
 | order_id | delivery_type |
-| :--- | :--- |
+|---- |---- |
 | ORD-1 | Fast |
 | ORD-2 | Slow |
 
@@ -272,14 +272,14 @@ FROM orders;
 
 **Sample Input**
 | name | manager_id | id |
-| :--- | :--- | :--- |
+|---- |---- |---- |
 | Bob Smith | 102 | 101 |
 | Alice Lee | 103 | 102 |
 | Sarah CEO | NULL | 103 |
 
 **Sample Output**
 | emp_name | mgr_name | sr_mgr_name |
-| :--- | :--- | :--- |
+|---- |---- |---- |
 | Bob Smith | Alice Lee | Sarah CEO |
 
 **Query**
@@ -300,13 +300,13 @@ LEFT JOIN employees sm ON m.manager_id = sm.id;
 
 **Sample Input**
 | id | total_amount |
-| :--- | :--- |
+|---- |---- |
 | ORD-99 | 100.00 |
 | ORD-100 | 50.00 |
 
 **Sample Output**
 | id |
-| :--- |
+|---- |
 | ORD-100 |
 
 **Query**
@@ -326,14 +326,14 @@ WHERE NOT EXISTS (
 
 **Sample Input**
 | month | sales |
-| :--- | :--- |
+|---- |---- |
 | Jan | 15000 |
 | Feb | 25000 |
 | Mar | 10000 |
 
 **Sample Output**
 | Jan | Feb | Mar |
-| :--- | :--- | :--- |
+|---- |---- |---- |
 | 15000 | 25000 | 10000 |
 
 **Query**
@@ -352,13 +352,13 @@ FROM sales;
 
 **Sample Input**
 | id | start_date | end_date |
-| :--- | :--- | :--- |
+|---- |---- |---- |
 | B-10 | 2023-06-01 | 2023-06-05 |
 | B-11 | 2023-06-04 | 2023-06-10 |
 
 **Sample Output**
 | id | start_date | end_date |
-| :--- | :--- | :--- |
+|---- |---- |---- |
 | B-10 | 2023-06-01 | 2023-06-05 |
 | B-11 | 2023-06-04 | 2023-06-10 |
 
@@ -379,7 +379,7 @@ AND a.end_date > b.start_date;
 
 **Sample Input**
 | salary |
-| :--- |
+|---- |
 | 60000 |
 | 70000 |
 | 75000 |
@@ -388,7 +388,7 @@ AND a.end_date > b.start_date;
 
 **Sample Output**
 | median |
-| :--- |
+|---- |
 | 75000 |
 
 **Query**
@@ -410,14 +410,14 @@ WHERE rn IN ((cnt + 1) / 2, (cnt + 2) / 2);
 
 **Sample Input**
 | user_id | month |
-| :--- | :--- |
+|---- |---- |
 | U-500 | 2024-01 |
 | U-500 | 2024-02 |
 | U-600 | 2024-01 |
 
 **Sample Output**
 | user_id |
-| :--- |
+|---- |
 | U-500 |
 
 **Query**
@@ -436,14 +436,14 @@ HAVING COUNT(DISTINCT month) = 2;
 
 **Sample Input**
 | emp_name | dept | salary |
-| :--- | :--- | :--- |
+|---- |---- |---- |
 | John | Sales | 120000 |
 | Jane | IT | 80000 |
 | Mike | IT | 60000 |
 
 **Sample Output**
 | emp_name |
-| :--- |
+|---- |
 | John |
 
 **Query**
@@ -464,14 +464,14 @@ WHERE salary > out_avg;
 
 **Sample Input**
 | user_id | type | amount |
-| :--- | :--- | :--- |
+|---- |---- |---- |
 | U-123 | CR | 150.00 |
 | U-123 | DB | 45.00 |
 | U-123 | CR | 20.00 |
 
 **Sample Output**
 | user_id | balance |
-| :--- | :--- |
+|---- |---- |
 | U-123 | 125.00 |
 
 **Query**
@@ -490,7 +490,7 @@ GROUP BY user_id;
 
 **Sample Input**
 | dept | salary |
-| :--- | :--- |
+|---- |---- |
 | Eng | 150000 |
 | Eng | 150000 |
 | Eng | 140000 |
@@ -498,7 +498,7 @@ GROUP BY user_id;
 
 **Sample Output**
 | dept | salary |
-| :--- | :--- |
+|---- |---- |
 | Eng | 150000 |
 | Eng | 140000 |
 
@@ -519,14 +519,14 @@ WHERE rnk <= 2;
 
 **Sample Input**
 | date | revenue |
-| :--- | :--- |
+|---- |---- |
 | 2023-11-01 | 1000 |
 | 2023-11-02 | 2000 |
 | 2023-11-03 | 3000 |
 
 **Sample Output**
 | date | rolling_avg |
-| :--- | :--- |
+|---- |---- |
 | 2023-11-01 | 1000.0 |
 | 2023-11-02 | 1500.0 |
 | 2023-11-03 | 2000.0 |
