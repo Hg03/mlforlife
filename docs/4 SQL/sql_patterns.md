@@ -24,6 +24,7 @@ icon: lucide/file-code-corner
 | U-1045 | 2023-10-01 11:10 | 2 |
 
 **Query**
+
 ```sql
 SELECT user_id, event_time,
 SUM(is_new) OVER (PARTITION BY user_id ORDER BY event_time) AS session_id
@@ -60,6 +61,7 @@ FROM (
 | C-992 |
 
 **Query**
+
 ```sql
 SELECT DISTINCT customer_id
 FROM (
@@ -90,6 +92,7 @@ WHERE amount > prev_amt;
 | C-105 |
 
 **Query**
+
 ```sql
 SELECT DISTINCT customer_id
 FROM (
@@ -121,6 +124,7 @@ WHERE DATEDIFF(day, prev_date, order_date) = 1;
 | U-802 |
 
 **Query**
+
 ```sql
 SELECT DISTINCT a.customer_id
 FROM activity a
@@ -154,6 +158,7 @@ AND a.customer_id NOT IN (
 | C-44 |
 
 **Query**
+
 ```sql
 SELECT customer_id
 FROM orders
@@ -183,6 +188,7 @@ HAVING COUNT(DISTINCT MONTH(order_date)) =
 | 1003 |
 
 **Query**
+
 ```sql
 SELECT o1.id + 1 AS missing_id
 FROM orders o1
@@ -212,6 +218,7 @@ AND o1.id < (SELECT MAX(id) FROM orders);
 | U-77 |
 
 **Query**
+
 ```sql
 SELECT user_id
 FROM (
@@ -244,6 +251,7 @@ HAVING COUNT(*) >= 3;
 | Laptops | 75.0 |
 
 **Query**
+
 ```sql
 SELECT
 category,
@@ -272,6 +280,7 @@ GROUP BY category;
 | ORD-2 | Slow |
 
 **Query**
+
 ```sql
 SELECT
 order_id,
@@ -303,6 +312,7 @@ FROM orders;
 | Bob Smith | Alice Lee | Sarah CEO |
 
 **Query**
+
 ```sql
 SELECT
 e.name AS emp_name,
@@ -332,6 +342,7 @@ LEFT JOIN employees sm ON m.manager_id = sm.id;
 | ORD-100 |
 
 **Query**
+
 ```sql
 SELECT o.id
 FROM orders o
@@ -361,6 +372,7 @@ WHERE NOT EXISTS (
 | 15000 | 25000 | 10000 |
 
 **Query**
+
 ```sql
 SELECT
 SUM(CASE WHEN month = 'Jan' THEN sales END) AS Jan,
@@ -389,6 +401,7 @@ FROM sales;
 | B-11 | 2023-06-04 | 2023-06-10 |
 
 **Query**
+
 ```sql
 SELECT a.*
 FROM bookings a
@@ -420,6 +433,7 @@ AND a.end_date > b.start_date;
 | 75000 |
 
 **Query**
+
 ```sql
 SELECT AVG(salary) AS median
 FROM (
@@ -451,6 +465,7 @@ WHERE rn IN ((cnt + 1) / 2, (cnt + 2) / 2);
 | U-500 |
 
 **Query**
+
 ```sql
 SELECT DISTINCT user_id
 FROM activity
@@ -479,6 +494,7 @@ HAVING COUNT(DISTINCT month) = 2;
 | John |
 
 **Query**
+
 ```sql
 SELECT emp_name FROM (
     SELECT emp_name, salary,
@@ -509,6 +525,7 @@ WHERE salary > out_avg;
 | U-123 | 125.00 |
 
 **Query**
+
 ```sql
 SELECT
 user_id,
@@ -539,6 +556,7 @@ GROUP BY user_id;
 | Eng | 140000 |
 
 **Query**
+
 ```sql
 SELECT dept, salary FROM (
     SELECT dept, salary,
@@ -570,6 +588,7 @@ WHERE rnk <= 2;
 | 2023-11-03 | 2000.0 |
 
 **Query**
+
 ```sql
 SELECT
 date,
