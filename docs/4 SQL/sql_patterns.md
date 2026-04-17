@@ -8,6 +8,7 @@ icon: lucide/file-code-corner
 `Identify new user sessions when inactivity exceeds 30 minutes.`
 
 **Sample Input**
+
 | user_id | event_time |
 |---- |---- |
 | U-1045 | 2023-10-01 10:00 |
@@ -15,6 +16,7 @@ icon: lucide/file-code-corner
 | U-1045 | 2023-10-01 11:10 |
 
 **Sample Output**
+
 | user_id | event_time | session_id |
 |---- |---- |---- |
 | U-1045 | 2023-10-01 10:00 | 1 |
@@ -43,6 +45,7 @@ FROM (
 `Find customers whose spend increases month over month.`
 
 **Sample Input**
+
 | customer_id | month | amount |
 |---- |---- |---- |
 | C-992 | 2023-01 | 50.00 |
@@ -51,6 +54,7 @@ FROM (
 | C-114 | 2023-02 | 70.00 |
 
 **Sample Output**
+
 | customer_id |
 |---- |
 | C-992 |
@@ -72,6 +76,7 @@ WHERE amount > prev_amt;
 `Find users who placed orders on consecutive days.`
 
 **Sample Input**
+
 | customer_id | order_date |
 |---- |---- |
 | C-105 | 2023-11-03 |
@@ -79,6 +84,7 @@ WHERE amount > prev_amt;
 | C-202 | 2023-11-10 |
 
 **Sample Output**
+
 | customer_id |
 |---- |
 | C-105 |
@@ -101,6 +107,7 @@ WHERE DATEDIFF(day, prev_date, order_date) = 1;
 `Find customers active last month but not this month.`
 
 **Sample Input**
+
 | customer_id | activity_date |
 |---- |---- |
 | U-801 | 2024-02-15 |
@@ -108,6 +115,7 @@ WHERE DATEDIFF(day, prev_date, order_date) = 1;
 | U-802 | 2024-02-20 |
 
 **Sample Output**
+
 | customer_id |
 |---- |
 | U-802 |
@@ -132,6 +140,7 @@ AND a.customer_id NOT IN (
 `Identify customers who placed orders in every available month.`
 
 **Sample Input**
+
 | customer_id | order_date |
 |---- |---- |
 | C-44 | 2023-01-10 |
@@ -139,6 +148,7 @@ AND a.customer_id NOT IN (
 | C-55 | 2023-01-20 |
 
 **Sample Output**
+
 | customer_id |
 |---- |
 | C-44 |
@@ -158,6 +168,7 @@ HAVING COUNT(DISTINCT MONTH(order_date)) =
 `Find missing order IDs in a sequential numeric list.`
 
 **Sample Input**
+
 | id |
 |---- |
 | 1001 |
@@ -166,6 +177,7 @@ HAVING COUNT(DISTINCT MONTH(order_date)) =
 | 1005 |
 
 **Sample Output**
+
 | missing_id |
 |---- |
 | 1003 |
@@ -185,6 +197,7 @@ AND o1.id < (SELECT MAX(id) FROM orders);
 `Find users active for at least 3 consecutive days.`
 
 **Sample Input**
+
 | user_id | login_date |
 |---- |---- |
 | U-77 | 2023-10-01 |
@@ -193,6 +206,7 @@ AND o1.id < (SELECT MAX(id) FROM orders);
 | U-88 | 2023-10-01 |
 
 **Sample Output**
+
 | user_id |
 |---- |
 | U-77 |
@@ -216,12 +230,14 @@ HAVING COUNT(*) >= 3;
 `Calculate category-wise percentage distribution of revenue.`
 
 **Sample Input**
+
 | category | revenue |
 |---- |---- |
 | Phones | 50000 |
 | Laptops | 150000 |
 
 **Sample Output**
+
 | category | pct |
 |---- |---- |
 | Phones | 25.0 |
@@ -242,12 +258,14 @@ GROUP BY category;
 `Categorize orders based on delivery duration (Fast <= 2 Days).`
 
 **Sample Input**
+
 | order_id | order_date | delivery_date |
 |---- |---- |---- |
 | ORD-1 | 2023-12-01 | 2023-12-02 |
 | ORD-2 | 2023-12-01 | 2023-12-05 |
 
 **Sample Output**
+
 | order_id | delivery_type |
 |---- |---- |
 | ORD-1 | Fast |
@@ -271,6 +289,7 @@ FROM orders;
 `Fetch employee, manager, and senior manager names.`
 
 **Sample Input**
+
 | name | manager_id | id |
 |---- |---- |---- |
 | Bob Smith | 102 | 101 |
@@ -278,6 +297,7 @@ FROM orders;
 | Sarah CEO | NULL | 103 |
 
 **Sample Output**
+
 | emp_name | mgr_name | sr_mgr_name |
 |---- |---- |---- |
 | Bob Smith | Alice Lee | Sarah CEO |
@@ -299,12 +319,14 @@ LEFT JOIN employees sm ON m.manager_id = sm.id;
 `Find orders that have no matching payments.`
 
 **Sample Input**
+
 | id | total_amount |
 |---- |---- |
 | ORD-99 | 100.00 |
 | ORD-100 | 50.00 |
 
 **Sample Output**
+
 | id |
 |---- |
 | ORD-100 |
@@ -325,6 +347,7 @@ WHERE NOT EXISTS (
 `Convert row-based monthly sales into aggregated columns.`
 
 **Sample Input**
+
 | month | sales |
 |---- |---- |
 | Jan | 15000 |
@@ -332,6 +355,7 @@ WHERE NOT EXISTS (
 | Mar | 10000 |
 
 **Sample Output**
+
 | Jan | Feb | Mar |
 |---- |---- |---- |
 | 15000 | 25000 | 10000 |
@@ -351,12 +375,14 @@ FROM sales;
 `Identify overlapping booking intervals for properties.`
 
 **Sample Input**
+
 | id | start_date | end_date |
 |---- |---- |---- |
 | B-10 | 2023-06-01 | 2023-06-05 |
 | B-11 | 2023-06-04 | 2023-06-10 |
 
 **Sample Output**
+
 | id | start_date | end_date |
 |---- |---- |---- |
 | B-10 | 2023-06-01 | 2023-06-05 |
@@ -378,6 +404,7 @@ AND a.end_date > b.start_date;
 `Calculate the true mathematical median of employee salaries.`
 
 **Sample Input**
+
 | salary |
 |---- |
 | 60000 |
@@ -387,6 +414,7 @@ AND a.end_date > b.start_date;
 | 120000 |
 
 **Sample Output**
+
 | median |
 |---- |
 | 75000 |
@@ -409,6 +437,7 @@ WHERE rn IN ((cnt + 1) / 2, (cnt + 2) / 2);
 `Find users active in both Month 1 and Month 2.`
 
 **Sample Input**
+
 | user_id | month |
 |---- |---- |
 | U-500 | 2024-01 |
@@ -416,6 +445,7 @@ WHERE rn IN ((cnt + 1) / 2, (cnt + 2) / 2);
 | U-600 | 2024-01 |
 
 **Sample Output**
+
 | user_id |
 |---- |
 | U-500 |
@@ -435,6 +465,7 @@ HAVING COUNT(DISTINCT month) = 2;
 `Find employees earning more than the company avg (excluding their own dept).`
 
 **Sample Input**
+
 | emp_name | dept | salary |
 |---- |---- |---- |
 | John | Sales | 120000 |
@@ -442,6 +473,7 @@ HAVING COUNT(DISTINCT month) = 2;
 | Mike | IT | 60000 |
 
 **Sample Output**
+
 | emp_name |
 |---- |
 | John |
@@ -463,6 +495,7 @@ WHERE salary > out_avg;
 `Calculate final user balance from credits (CR) and debits (DB).`
 
 **Sample Input**
+
 | user_id | type | amount |
 |---- |---- |---- |
 | U-123 | CR | 150.00 |
@@ -470,6 +503,7 @@ WHERE salary > out_avg;
 | U-123 | CR | 20.00 |
 
 **Sample Output**
+
 | user_id | balance |
 |---- |---- |
 | U-123 | 125.00 |
@@ -489,6 +523,7 @@ GROUP BY user_id;
 `Find the top 2 highest paid employees per department.`
 
 **Sample Input**
+
 | dept | salary |
 |---- |---- |
 | Eng | 150000 |
@@ -497,6 +532,7 @@ GROUP BY user_id;
 | Eng | 120000 |
 
 **Sample Output**
+
 | dept | salary |
 |---- |---- |
 | Eng | 150000 |
@@ -518,6 +554,7 @@ WHERE rnk <= 2;
 `Calculate a 7-day rolling average of daily revenue.`
 
 **Sample Input**
+
 | date | revenue |
 |---- |---- |
 | 2023-11-01 | 1000 |
@@ -525,6 +562,7 @@ WHERE rnk <= 2;
 | 2023-11-03 | 3000 |
 
 **Sample Output**
+
 | date | rolling_avg |
 |---- |---- |
 | 2023-11-01 | 1000.0 |
