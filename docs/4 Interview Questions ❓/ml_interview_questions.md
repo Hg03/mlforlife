@@ -397,12 +397,6 @@ Any function that is **not monotonically increasing** would change the ROC curve
 
 ---
 
-## ML Interview Questions (Continued)
-
-Below are the completed solutions for the remaining questions (23–35) and the full consolidated markdown content.
-
----
-
 ### 23. IBM (Entropy of Gaussian Variable)
 
 Say $X$ is a univariate Gaussian random variable. What is the **entropy of $X$**?
