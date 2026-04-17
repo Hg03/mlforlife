@@ -397,11 +397,25 @@ Any function that is **not monotonically increasing** would change the ROC curve
 
 ---
 
+## ML Interview Questions (Continued)
+
+Below are the completed solutions for the remaining questions (23–35) and the full consolidated markdown content.
+
+---
+
 ### 23. IBM (Entropy of Gaussian Variable)
 
 Say $X$ is a univariate Gaussian random variable. What is the **entropy of $X$**?
 
 **Solution:**
+
+For a continuous random variable, we calculate **differential entropy**. Given $X \sim \mathcal{N}(\mu, \sigma^2)$, the probability density function is:
+$$f(x) = \frac{1}{\sqrt{2\pi\sigma^2}} e^{-\frac{(x-\mu)^2}{2\sigma^2}}$$
+
+The entropy $H(X)$ is defined as $E[-\ln f(X)]$:
+$$H(X) = \frac{1}{2} \ln(2\pi e\sigma^2)$$
+
+**Key Takeaway:** The entropy of a Gaussian variable depends **only on the variance** ($\sigma^2$), not the mean ($\mu$). This makes sense intuitively: shifting the distribution doesn't change its "spread" or uncertainty.
 
 ---
 
@@ -411,6 +425,18 @@ How would you build a model to calculate a customer's **propensity to buy** a pa
 
 **Solution:**
 
+This is typically treated as a **binary classification** problem or a **Learning to Rank** problem.
+
+1.  **Approach:** Use a **Gradient Boosted Decision Tree (GBDT)** like XGBoost or LightGBM.
+    * **Features:** User demographics, past purchase history, "dwell time" on item pages, frequency of app opens, and item attributes (price, category).
+    * **Target:** Binary (1 if bought within $X$ days, 0 otherwise).
+2.  **Pros:**
+    * **Non-linear relationships:** Can capture complex interactions between "time since last purchase" and "item category."
+    * **Feature Importance:** Helps the business understand what drives purchases.
+3.  **Cons:**
+    * **Cold Start:** Hard to predict propensity for new users or new items.
+    * **Selection Bias:** The model only learns from users who were actually shown the item.
+
 ---
 
 ### 25. Citadel (Gaussian Naive Bayes vs. Logistic Regression)
@@ -419,17 +445,31 @@ Compare and contrast **Gaussian Naive Bayes (GNB) and logistic regression**. Whe
 
 **Solution:**
 
----
+| Feature | Gaussian Naive Bayes | Logistic Regression |
+| :--- | :--- | :--- |
+| **Model Type** | **Generative:** Models $P(X|Y)$. | **Discriminative:** Models $P(Y|X)$. |
+| **Assumptions** | Assumes features are **independent** given the class. | Assumes a linear relationship between features and log-odds. |
+| **Data Needs** | Performs well with **less data** if independence holds. | Requires **more data** to converge but is generally more accurate. |
+| **Outliers** | Highly sensitive to outliers (impacts mean/variance). | More robust due to the sigmoid function. |
+
+**When to use:** Use **GNB** for small datasets or as a quick baseline. Use **Logistic Regression** when you have sufficient data and want to capture correlations between features.
 
 ---
-
-### Hard (Questions 26 - 35)
 
 ### 26. Walmart (K-means Loss and Update Formula)
 
-What loss function is used in **K-means clustering**? Compute the update formula using (1) **batch gradient descent** and (2) **stochastic gradient descent** for the cluster mean for cluster $k$ using a learning rate $\epsilon$.
+What loss function is used in **K-means clustering**? Compute the update formula for the cluster mean for cluster $k$ using (1) **batch gradient descent** and (2) **stochastic gradient descent** using a learning rate $\epsilon$.
 
 **Solution:**
+
+The loss function is the **Inertia** (Within-Cluster Sum of Squares):
+$$J = \sum_{i=1}^{n} \sum_{k=1}^{K} r_{ik} \|x_i - \mu_k\|^2$$
+where $r_{ik} = 1$ if $x_i$ is assigned to cluster $k$.
+
+1.  **Batch Gradient Descent:** Updates $\mu_k$ using all points in the cluster at once.
+    $$\mu_k^{new} = \mu_k^{old} - \epsilon \nabla_{\mu_k} J = \mu_k^{old} + \epsilon \sum_{i \in C_k} (x_i - \mu_k)$$
+2.  **Stochastic Gradient Descent (SGD):** Updates $\mu_k$ using a single point $x_i$.
+    $$\mu_k^{new} = \mu_k^{old} + \epsilon(x_i - \mu_k)$$
 
 ---
 
@@ -439,6 +479,15 @@ Describe the **kernel trick in SVMs** and give a simple example. How do you deci
 
 **Solution:**
 
+The **Kernel Trick** allows SVMs to solve non-linearly separable problems by implicitly mapping data into a higher-dimensional space where a linear separator exists, **without** ever calculating the coordinates in that space. It uses a kernel function $K(x, z) = \phi(x) \cdot \phi(z)$.
+
+* **Example:** If you have points in 1D that aren't separable, mapping $x \to [x, x^2]$ (Polynomial Kernel) can make them separable by a line in 2D.
+* **Selection:**
+    * **Linear Kernel:** Start here if the number of features is large relative to the number of observations.
+    * **RBF (Gaussian) Kernel:** Use if the relationship is non-linear (most common choice).
+
+
+
 ---
 
 ### 28. Morgan Stanley (Gaussian Distribution Parameter Guess)
@@ -446,6 +495,15 @@ Describe the **kernel trick in SVMs** and give a simple example. How do you deci
 Say we have $N$ observations for some variable which we model as being drawn from a **Gaussian distribution**. What are your best guesses for the parameters of the distribution?
 
 **Solution:**
+
+The "best guesses" are the **Maximum Likelihood Estimators (MLE)**:
+
+1.  **Mean ($\hat{\mu}$):** The sample mean.
+    $$\hat{\mu} = \frac{1}{N} \sum_{i=1}^{N} x_i$$
+2.  **Variance ($\hat{\sigma}^2$):** The sample variance.
+    $$\hat{\sigma}^2 = \frac{1}{N} \sum_{i=1}^{N} (x_i - \hat{\mu})^2$$
+
+*Note: For an unbiased estimator of variance, we typically use $N-1$ in the denominator (Bessel's correction).*
 
 ---
 
@@ -455,6 +513,12 @@ Say we are using a **Gaussian mixture model (GMM)** for anomaly detection. Descr
 
 **Solution:**
 
+* **Setup:** A GMM assumes data is generated from a mixture of $K$ Gaussian distributions:
+    $$p(x) = \sum_{k=1}^{K} \pi_k \mathcal{N}(x | \mu_k, \Sigma_k)$$
+* **Posterior (Responsibility):** Using Bayes' Rule, the probability that point $x_i$ belongs to cluster $k$ is:
+    $$\gamma(z_{ik}) = \frac{\pi_k \mathcal{N}(x_i | \mu_k, \Sigma_k)}{\sum_{j=1}^{K} \pi_j \mathcal{N}(x_i | \mu_j, \Sigma_j)}$$
+* **Anomaly Detection:** Evaluate the **log-likelihood** of a new transaction. If $\ln p(x_{new}) < \tau$ (some threshold), the transaction is "unlikely" under the learned model and flagged as fraudulent.
+
 ---
 
 ### 30. Robinhood (Predicting User Churn)
@@ -462,6 +526,15 @@ Say we are using a **Gaussian mixture model (GMM)** for anomaly detection. Descr
 Walk me through how you'd build a model to predict whether a particular Robinhood user will **churn**?
 
 **Solution:**
+
+1.  **Define Churn:** (e.g., No trades or logins for 30 days).
+2.  **Feature Engineering:**
+    * **Behavioral:** Frequency of trades, average balance, types of assets (crypto vs. stocks).
+    * **Engagement:** App opens, time spent reading news.
+    * **Technical:** App crashes experienced.
+3.  **Model Selection:** XGBoost or Random Forest are ideal because they handle tabular data and missing values well.
+4.  **Evaluation:** Focus on **Recall** (we want to catch everyone likely to leave) and **AUC-ROC**.
+5.  **Action:** Use the model's "probability of churn" to trigger retention emails or offers.
 
 ---
 
@@ -471,29 +544,57 @@ Suppose you are running a **linear regression** and model the error terms as bei
 
 **Solution:**
 
+The model is $y_i = \beta x_i + \epsilon_i$, where $\epsilon_i \sim \mathcal{N}(0, \sigma^2)$. The likelihood $L(\beta)$ is:
+$$L(\beta) = \prod_{i=1}^{n} \frac{1}{\sqrt{2\pi\sigma^2}} \exp\left(-\frac{(y_i - \beta x_i)^2}{2\sigma^2}\right)$$
+Taking the log-likelihood:
+$$\ln L(\beta) = C - \frac{1}{2\sigma^2} \sum_{i=1}^{n} (y_i - \beta x_i)^2$$
+To maximize $\ln L(\beta)$, we must **minimize** the term being subtracted: $\sum (y_i - \beta x_i)^2$, which is the **Sum of Squared Residuals (SSR)**.
+
 ---
 
 ### 32. Uber (Principal Components Analysis - PCA)
 
-Describe the idea behind **Principal Components Analysis (PCA)** and describe its formulation and derivation in matrix form. Next, go through the procedural description and solve the constrained maximization.
+Describe the idea behind **Principal Components Analysis (PCA)** and describe its formulation and derivation in matrix form.
 
 **Solution:**
+
+**Idea:** PCA is a dimensionality reduction technique that projects data onto a lower-dimensional subspace while maximizing the **variance** of the projected data.
+
+**Derivation:**
+1.  **Center the data:** $X_{centered} = X - \mu$.
+2.  **Compute Covariance Matrix:** $\Sigma = \frac{1}{n-1} X^T X$.
+3.  **Eigen-decomposition:** Find the eigenvectors $V$ and eigenvalues $\lambda$ of $\Sigma$.
+    $$\Sigma V = V \Lambda$$
+4.  **Project:** The first principal component is the eigenvector corresponding to the largest eigenvalue.
+
+
 
 ---
 
 ### 33. Citadel (Logistic Regression Formulation)
 
-Describe the model formulation behind **logistic regression**. How do you maximize the log-likelihood of a given model (using the two-class case)?
+Describe the model formulation behind **logistic regression**. How do you maximize the log-likelihood of a given model?
 
 **Solution:**
+
+* **Formulation:** We model the probability $p = P(y=1|x)$ using the sigmoid function:
+    $$p = \frac{1}{1 + e^{-\beta^T x}}$$
+* **Log-Likelihood:** For $y \in \{0, 1\}$, the log-likelihood is:
+    $$\ell(\beta) = \sum_{i=1}^{n} [y_i \ln(p_i) + (1-y_i) \ln(1-p_i)]$$
+* **Maximization:** This is a convex optimization problem. Since there is no closed-form solution, we use **Gradient Descent** or **Newton's Method (Iteratively Reweighted Least Squares)** to find the optimal $\beta$.
 
 ---
 
 ### 34. Spotify (Discover Weekly Algorithm)
 
-How would you approach creating a **music recommendation algorithm for Discover Weekly** (a 30-song weekly playlist personalized to an individual user)?
+How would you approach creating a **music recommendation algorithm for Discover Weekly**?
 
 **Solution:**
+
+Spotify famously uses a **Hybrid System**:
+1.  **Collaborative Filtering:** Analyze user listening patterns (if you and I both like Song A and B, and I like Song C, you might too).
+2.  **Natural Language Processing (NLP):** Scrape the web and playlists for text/descriptions associated with songs to determine "cultural" similarity.
+3.  **Audio Models (CNNs):** Analyze the raw audio signal (tempo, key, loudness) to find songs with similar "vibes," helping to solve the **Cold Start** problem for new songs.
 
 ---
 
@@ -502,3 +603,10 @@ How would you approach creating a **music recommendation algorithm for Discover 
 Derive the **variance-covariance matrix of the least squares parameter estimates** in matrix form.
 
 **Solution:**
+
+Starting with the OLS estimator $\hat{\beta} = (X^TX)^{-1}X^TY$ and substituting $Y = X\beta + \epsilon$:
+$$\hat{\beta} = (X^TX)^{-1}X^T(X\beta + \epsilon) = \beta + (X^TX)^{-1}X^T\epsilon$$
+The variance is $Var(\hat{\beta}) = E[(\hat{\beta}-\beta)(\hat{\beta}-\beta)^T]$:
+$$Var(\hat{\beta}) = (X^TX)^{-1}X^T E[\epsilon\epsilon^T] X(X^TX)^{-1}$$
+Assuming homoscedasticity ($E[\epsilon\epsilon^T] = \sigma^2 I$):
+$$Var(\hat{\beta}) = \sigma^2 (X^TX)^{-1}$$
