@@ -18,6 +18,7 @@ icon: lucide/file-code-corner
 
 
 **Sample Output**
+
 |user_id|event_time|session_id|
 |-------|----------|----------|
 |U-1045|2023-10-01 10:00|1|
