@@ -600,7 +600,9 @@ Derive the **variance-covariance matrix of the least squares parameter estimates
 
 Starting with the OLS estimator $\hat{\beta} = (X^TX)^{-1}X^TY$ and substituting $Y = X\beta + \epsilon$:
 $$\hat{\beta} = (X^TX)^{-1}X^T(X\beta + \epsilon) = \beta + (X^TX)^{-1}X^T\epsilon$$
+
 The variance is $Var(\hat{\beta}) = E[(\hat{\beta}-\beta)(\hat{\beta}-\beta)^T]$:
 $$Var(\hat{\beta}) = (X^TX)^{-1}X^T E[\epsilon\epsilon^T] X(X^TX)^{-1}$$
+
 Assuming homoscedasticity ($E[\epsilon\epsilon^T] = \sigma^2 I$):
 $$Var(\hat{\beta}) = \sigma^2 (X^TX)^{-1}$$
