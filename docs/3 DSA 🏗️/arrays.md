@@ -256,3 +256,33 @@ class Solution:
         return res
 
 ```
+
+## [Move Zeroes](https://leetcode.com/problems/move-zeroes/)
+
+```python
+class Solution:
+    def moveZeroes(self, nums: List[int]) -> None:
+        left = 0
+
+        for right in range(len(nums)):
+            if nums[right] != 0:
+                nums[right], nums[left] = nums[left], nums[right]
+                left += 1
+        
+        return nums
+```
+
+## [Remove Duplicates from Sorted Array](https://leetcode.com/problems/remove-duplicates-from-sorted-array/description/)
+
+```python
+class Solution:
+    def removeDuplicates(self, nums: List[int]) -> int:
+        i = 1
+
+        for j in range(1, len(nums)):
+            if nums[j] != nums[i - 1]:
+                nums[i] = nums[j]
+                i += 1
+        
+        return i
+```
