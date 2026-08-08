@@ -256,6 +256,9 @@ icon: lucide/briefcase
   - Increasingly common in new models (Llama 3.1, Mistral)
 - **Interview angle**: GQA is an easy win for inference efficiency, worth mentioning if asked about serving optimizations
 
+<img width="800" height="443" alt="image" src="https://github.com/user-attachments/assets/73de4166-049c-4915-98a7-0eac56fa8585" />
+
+
 ### Other Serving Optimizations
 - **Continuous batching**: dynamically add/remove requests from batch mid-generation instead of static batching (reduces GPU idle, enables higher throughput)
 - **Speculative decoding**: small "draft" model proposes multiple tokens, large model verifies in parallel → speeds up generation
