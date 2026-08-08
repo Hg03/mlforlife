@@ -1361,6 +1361,7 @@ S3 (raw sales/transactions data)
 ```
 
 **Key service choices and why:**
+
 | Stage | AWS Service | Why |
 |-------|-------------|-----|
 | Raw data storage | **S3** | Cheap, durable, standard landing zone for structured + unstructured data |
@@ -1403,6 +1404,7 @@ S3 (raw documents: PDFs, HTML, Confluence exports, etc.)
 ```
 
 **Key service choices and why:**
+
 | Stage | AWS Service | Why |
 |-------|-------------|-----|
 | Document storage | **S3** | Standard landing zone, versioned, integrates natively with Bedrock Knowledge Bases as a data source |
