@@ -1344,7 +1344,8 @@ User → API Gateway → [Cache check] → Router →
 
 ### 21.1 Deploying a Demand Forecasting Solution on AWS
 
-**End-to-end architecture:**
+#### End-to-end architecture:
+
 ```
 S3 (raw sales/transactions data)
    → Glue (ETL, data catalog, schema discovery)
@@ -1360,7 +1361,7 @@ S3 (raw sales/transactions data)
    → Monitoring: SageMaker Model Monitor (data/quality drift) + CloudWatch (pipeline health, job failures)
 ```
 
-**Key service choices and why:**
+#### Key service choices and why:
 
 | Stage | AWS Service | Why |
 |-------|-------------|-----|
@@ -1382,7 +1383,8 @@ S3 (raw sales/transactions data)
 
 ### 21.2 Deploying a RAG Solution on AWS
 
-**End-to-end architecture:**
+#### End-to-end architecture:
+
 ```
 S3 (raw documents: PDFs, HTML, Confluence exports, etc.)
    → Ingestion & chunking (Lambda for small scale, or Glue jobs for large batch)
@@ -1403,7 +1405,7 @@ S3 (raw documents: PDFs, HTML, Confluence exports, etc.)
    → Networking: VPC with PrivateLink to Bedrock for private connectivity, security groups scoping access
 ```
 
-**Key service choices and why:**
+#### Key service choices and why:
 
 | Stage | AWS Service | Why |
 |-------|-------------|-----|
