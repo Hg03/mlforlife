@@ -1362,7 +1362,7 @@ S3 (raw sales/transactions data)
 
 **Key service choices and why:**
 | Stage | AWS Service | Why |
-|---|---|---|
+|-------|-------------|-----|
 | Raw data storage | **S3** | Cheap, durable, standard landing zone for structured + unstructured data |
 | ETL / feature prep | **Glue** (serverless Spark) or **EMR** (more control) | Glue for simpler managed ETL; EMR when you need fine-grained Spark tuning at large scale |
 | Managed forecasting | **Amazon Forecast** | AutoML across multiple algorithms (DeepAR+, CNN-QR, Prophet, ARIMA, ETS), handles cold-start and hierarchical data, minimal ML ops burden — good default unless you need full model control |
@@ -1404,7 +1404,7 @@ S3 (raw documents: PDFs, HTML, Confluence exports, etc.)
 
 **Key service choices and why:**
 | Stage | AWS Service | Why |
-|---  --|-------------|-----|
+|-------|-------------|-----|
 | Document storage | **S3** | Standard landing zone, versioned, integrates natively with Bedrock Knowledge Bases as a data source |
 | Chunking/embedding pipeline | **Lambda** (event-driven, small-medium scale) or **Glue** (large batch) | Lambda is simplest for incremental doc updates triggered by S3 events; Glue for large one-time/bulk backfills |
 | Embeddings | **Bedrock Titan Embeddings** (managed) or custom model on **SageMaker endpoint** | Titan is the path of least resistance and stays inside the Bedrock ecosystem; custom SageMaker-hosted embeddings justified for a fine-tuned domain-specific embedding model |
