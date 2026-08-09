@@ -2,27 +2,27 @@
 icon: lucide/briefcase
 ---
 
-3. AI/ML Engineer Interview Revision Notes
+## 3. AI/ML Engineer Interview Revision Notes
    
 ### Table of Contents
 1. Machine Learning Fundamentals
-2. Deep Learning Basics & Transformers
-3. Tokens, Embeddings & Position Encodings
-4. LLM Architecture & Inference Parameters
-5. LLM Training Pipeline: Pretraining → SFT → RLHF/DPO
-6. Prompt Engineering & Few-Shot Learning
-7. Agents & Tool Calling
-8. Model Context Protocol (MCP)
-9. Embeddings Deep-Dive
-10. RAG (Retrieval-Augmented Generation)
-11. Multimodal Models (Vision + Language)
-12. Graph RAG & Knowledge Graphs
-13. Latest LLM Models (July 2026)
-14. Distributed Training & Inference
-15. Observability & Evaluation
-16. Testing & Eval-Driven Development for LLM Apps
-17. Time Series Concepts
-18. Demand Forecasting
+2. Time Series Concepts
+3. Demand Forecasting
+4. Deep Learning Basics & Transformers
+5. Tokens, Embeddings & Position Encodings
+6. LLM Architecture & Inference Parameters
+7. LLM Training Pipeline: Pretraining → SFT → RLHF/DPO
+8. Prompt Engineering & Few-Shot Learning
+9. Agents
+10. Model Context Protocol (MCP)
+11. Embeddings Deep-Dive
+12. RAG (Retrieval-Augmented Generation)
+13. Multimodal Models (Vision + Language)
+14. Graph RAG & Knowledge Graphs
+15. Distributed Training & Inference (surface-level, but expect it)
+16. Observability & Evaluation
+17. Failure Diagnosis Playbooks
+18. Testing & Eval-Driven Development for LLM Apps
 19. Coding / Whiteboard Practice
 20. System Design for LLM/RAG Applications
 21. Deploying Forecasting & RAG Solutions on AWS
@@ -109,7 +109,152 @@ icon: lucide/briefcase
 
 ---
 
-## 2. Deep Learning Basics & Transformers
+## 2. Time Series Concepts
+
+*Foundational for demand forecasting (Section 3) and for any "explain classical vs ML forecasting" interview question.*
+
+### Core Terminology
+
+| Term | Definition |
+|---|---|
+| **Trend** | Long-term upward/downward movement in the series |
+| **Seasonality** | Regular, fixed-period pattern (e.g., weekly, yearly) |
+| **Cyclic pattern** | Fluctuations without fixed period (e.g., business cycles) — differs from seasonality, which has a fixed known period |
+| **Residual / Noise** | What's left after removing trend + seasonality — ideally close to white noise |
+| **Stationarity** | Statistical properties (mean, variance, autocovariance) don't change over time |
+| **Lag** | Value of the series at a previous time step (t-1, t-7, etc.) |
+| **White noise** | Series with no autocorrelation, constant mean/variance — "unpredictable" component |
+| **Random walk** | `y_t = y_{t-1} + ε_t` — next value is previous value plus noise; classic non-stationary series |
+| **Autocorrelation** | Correlation of a series with a lagged version of itself |
+
+### Stationarity — Why It Matters
+- Most classical forecasting models (ARIMA family) **assume stationarity** — a non-stationary series (trending mean, changing variance) breaks the model's assumptions and produces unreliable forecasts
+- **Tests**: 
+  - **ADF (Augmented Dickey-Fuller)**: null hypothesis = series has a unit root (non-stationary); low p-value → reject null → stationary
+  - **KPSS**: opposite null hypothesis (series IS stationary) — often used alongside ADF to cross-check
+- **Fixes for non-stationarity**: differencing (`y_t - y_{t-1}`), log transform (stabilizes variance), seasonal differencing (`y_t - y_{t-m}`)
+
+### Decomposition
+- **Additive model**: `Y = Trend + Seasonality + Residual` — use when seasonal fluctuations are roughly constant in magnitude regardless of trend level
+- **Multiplicative model**: `Y = Trend × Seasonality × Residual` — use when seasonal fluctuations grow/shrink proportionally with the trend level (common in retail/demand data)
+- **Methods**: classical decomposition (simple moving-average based), **STL (Seasonal-Trend decomposition using Loess)** — more robust to outliers and handles seasonality that changes slowly over time, generally preferred over classical decomposition in practice
+
+### ACF & PACF (model identification)
+- **ACF (Autocorrelation Function)**: correlation between the series and its lag, including indirect effects passed through intermediate lags
+- **PACF (Partial Autocorrelation Function)**: correlation between the series and its lag **after removing the effect of intermediate lags** — isolates the direct relationship
+- **Usage for classical model order selection**:
+  - PACF cuts off sharply after lag p → suggests **AR(p)**
+  - ACF cuts off sharply after lag q → suggests **MA(q)**
+  - Both decay gradually → suggests an ARMA (mixed) process
+
+### ARIMA / SARIMA / SARIMAX
+- **ARIMA(p, d, q)**:
+  - **p**: AR order — regression on the series' own past values
+  - **d**: differencing order — number of times differenced to achieve stationarity
+  - **q**: MA order — regression on past forecast errors
+- **SARIMA(p,d,q)(P,D,Q,m)**: adds a seasonal component with its own AR/I/MA orders and seasonal period `m` (e.g., m=12 for monthly data with yearly seasonality)
+- **SARIMAX**: SARIMA + exogenous regressors (e.g., price, promotions, holidays, weather) — very relevant for demand forecasting since demand is rarely driven by history alone
+
+### Exponential Smoothing Family
+| Method | Handles |
+|---|---|
+| **SES (Simple Exponential Smoothing)** | Level only — no trend, no seasonality |
+| **Holt's Linear Trend** | Level + trend |
+| **Holt-Winters** | Level + trend + seasonality (additive or multiplicative) |
+
+- Weighted average of past observations with exponentially decaying weights — recent observations matter more
+- Simple, fast, surprisingly strong baseline, especially at short horizons
+
+### Prophet (Meta)
+- Additive decomposition model: `y(t) = trend(t) + seasonality(t) + holidays(t) + ε`
+- Seasonality modeled via **Fourier terms**, trend via piecewise linear/logistic growth with automatic changepoint detection
+- **Strengths**: handles missing data and outliers gracefully, easy to add holiday effects, minimal tuning needed, good default baseline
+- **Weaknesses**: often underperforms a well-tuned ARIMA or ML model on accuracy; less suited for very high-frequency or highly irregular series
+
+### ML & Deep Learning Approaches
+- **Feature-based ML (XGBoost/LightGBM)**: reframe forecasting as tabular regression using lag features, rolling statistics, calendar features — very strong and popular in industry/competitions (e.g., M5 competition winners)
+- **RNN/LSTM/GRU**: sequence models that learn temporal patterns directly; historically strong but increasingly outperformed by transformer-based or global models
+- **DeepAR (Amazon)**: autoregressive RNN trained **globally across many related time series**, produces **probabilistic** forecasts (full predictive distribution, not just a point estimate) — foundational for Amazon Forecast
+- **Temporal Fusion Transformer (TFT)**: attention-based, handles static covariates, known future inputs (e.g., planned promotions), and past observed inputs jointly; provides interpretable attention weights
+- **N-BEATS / N-HiTS**: pure deep learning architectures (no recurrence/attention needed) that perform strongly on univariate forecasting benchmarks
+- **PatchTST / Informer**: transformer variants optimized for long-horizon forecasting efficiency
+
+### Time-Series-Specific Cross-Validation
+- **Never use random k-fold** — it leaks future information into training (a huge, common mistake)
+- **Walk-forward / rolling-origin validation**: train on data up to time T, validate on T+1...T+h, then slide the origin forward and repeat
+- **Expanding window**: training set grows each fold (uses all available history)
+- **Sliding window**: training set is a fixed-size window that moves forward (useful when older data is less relevant, e.g., due to concept drift)
+
+### Evaluation Metrics
+| Metric | Notes |
+|---|---|
+| **MAE** | Mean Absolute Error — simple, same units as target |
+| **RMSE** | Penalizes large errors more (squared term) |
+| **MAPE** | Mean Absolute Percentage Error — intuitive but undefined/unstable near zero actuals, asymmetric (penalizes over-forecast less than under-forecast) |
+| **sMAPE** | Symmetric MAPE — attempts to fix MAPE's asymmetry, still has edge cases near zero |
+| **WAPE (Weighted APE)** | Aggregates errors and actuals before dividing — much more stable than MAPE for sparse/low-volume series, very common in demand forecasting |
+| **MASE (Mean Absolute Scaled Error)** | Scale-free — compares model error to a naive (seasonal) forecast's error; MASE < 1 means you're beating the naive baseline |
+
+**Interview trap:** MAPE breaks down badly on intermittent/low-volume demand data (division by near-zero actuals) — WAPE or MASE is the safer default for demand forecasting eval.
+
+### Multi-Horizon Forecasting Strategies
+- **Direct**: train a separate model per forecast horizon (h=1, h=2, ... h=n) — no error accumulation, but more models to maintain
+- **Recursive**: forecast h=1, feed it back as input to forecast h=2, and so on — simple, but errors compound over the horizon
+- **Multi-output**: single model predicts the entire horizon vector at once (common in DL models like TFT, N-BEATS) — captures cross-horizon dependencies directly
+
+---
+
+## 3. Demand Forecasting
+
+*Applies Section 2's time series toolbox to the specific, very common business problem of predicting product/SKU-level demand for inventory and supply chain decisions.*
+
+### Why Demand Forecasting Is Different From Generic Time Series
+- You're rarely forecasting **one** series — usually thousands to millions of SKU × location combinations
+- Forecasts feed directly into **business decisions with asymmetric costs** (stockout = lost sales/customer trust; overstock = holding cost, waste, markdowns) — accuracy alone isn't the whole story, forecast **bias** matters too
+- Heavy external drivers: promotions, pricing, seasonality, weather, competitor actions, macroeconomic factors
+
+### Key Challenges
+
+| Challenge | Why it's hard | Common fix |
+|---|---|---|
+| **Intermittent / sparse demand** | Many periods with zero demand (e.g., slow-moving SKUs) — MAPE/RMSE misleading, classical ARIMA struggles | **Croston's method**, **TSB (Teunter-Syntetos-Babai)**, or global ML models that pool information across SKUs |
+| **New product / cold start** | No historical data at all | Use analogous/similar product history, hierarchical pooling, attribute-based (content) features instead of pure history |
+| **Promotions & price changes** | Sudden demand spikes not explainable by history alone | Include promo/price as **exogenous regressors** (SARIMAX, feature-based ML, TFT known-future-inputs) |
+| **Hierarchical consistency** | Forecasts at SKU level must roll up consistently to category/region/total level | **Reconciliation**: top-down, bottom-up, middle-out, or **optimal reconciliation (MinT)** which adjusts all levels for statistical coherence |
+| **Scale (thousands of series)** | Fitting individual ARIMA per SKU doesn't scale operationally | **Global models** — one model trained across all series (with SKU/store as a categorical/embedding feature), shares learned patterns, better cold-start behavior |
+
+### Modeling Approaches in Practice
+
+- **Classical, per-series**: ARIMA/SARIMA/Prophet fit independently per SKU — interpretable, fine for a small number of high-value series, doesn't scale well and can't share information across related products
+- **Global feature-based ML**: single LightGBM/XGBoost model trained across all SKU-store combinations with lag features + calendar + price/promo + SKU/store as categorical — currently one of the most common industry-strength approaches (this is essentially what won the M5 forecasting competition)
+- **Global deep learning**: DeepAR, TFT, N-BEATS trained across the full panel of series — best when there's enough data volume to benefit from shared representation learning, and when probabilistic output is needed
+- **Amazon Forecast (managed AWS service)**: AutoML wrapper that tries multiple algorithms (ARIMA, ETS, Prophet, DeepAR+, CNN-QR) and picks/ensembles the best per use case — removes most of the algorithm-selection burden (see Section 21 for deployment details)
+
+### Feature Engineering for Demand Forecasting
+- **Calendar features**: day-of-week, month, is_holiday, is_weekend, days-to-next-holiday
+- **Lag features**: t-1, t-7, t-14, t-28, t-365 (capture weekly/yearly seasonality)
+- **Rolling statistics**: rolling mean/std/min/max over multiple windows (7d, 28d, 90d)
+- **Price/promotion features**: current price, discount %, promo flag, days since last promo
+- **External regressors**: weather, local events, competitor pricing (when available)
+- **Entity features**: SKU category, brand, store cluster, or learned embeddings for high-cardinality IDs
+
+### Probabilistic Forecasting (critical for inventory decisions)
+- A single point forecast isn't enough to set safety stock — you need to know the **distribution** of likely demand
+- Models output **quantile forecasts** (e.g., P10, P50, P90) trained via **pinball/quantile loss**
+- Business use: set reorder points/safety stock based on a target **service level** (e.g., stock to the P90 forecast to achieve ~90% fill rate), rather than just the mean forecast
+
+### Evaluation — Business-Aligned Metrics
+- **WAPE** is the industry default for demand forecasting (robust to zero/low-volume SKUs, aggregates naturally across a portfolio)
+- **Bias metrics** (mean error, not absolute) matter separately from accuracy — a model that's "accurate on average" but systematically under-forecasts will still cause chronic stockouts
+- **Business-facing metrics**: fill rate / service level achieved, inventory holding cost vs. stockout cost tradeoff, forecast value added (FVA) — is the model actually beating a naive/manual forecast?
+
+**Interview soundbite:** *"In demand forecasting, WAPE beats MAPE because MAPE blows up on near-zero actuals, which are common with slow-moving SKUs — WAPE aggregates errors and actuals before dividing, so it stays stable at portfolio scale."*
+
+**Interview soundbite:** *"Point forecasts aren't enough for inventory decisions — you need quantile/probabilistic forecasts to translate a forecast into a safety-stock and service-level decision."*
+
+---
+
+## 4. Deep Learning Basics & Transformers
 
 ### Backpropagation (intuition, not derivation)
 - Forward pass computes prediction → loss
@@ -178,7 +323,7 @@ icon: lucide/briefcase
 
 ---
 
-## 3. Tokens, Embeddings & Position Encodings
+## 5. Tokens, Embeddings & Position Encodings
 
 ### Tokenization
 - **What it does**: converts raw text → sequence of integers (token IDs) that the model can process
@@ -212,7 +357,7 @@ icon: lucide/briefcase
 
 ---
 
-## 4. LLM Architecture & Inference Parameters
+## 6. LLM Architecture & Inference Parameters
 
 ### Context Window (Critical Constraint)
 - **What it is**: max number of tokens the model can process at once (e.g., 8K, 32K, 128K, 200K)
@@ -282,7 +427,7 @@ During inference, LLMs don't just pick the highest-probability next token; they 
 
 ---
 
-## 5. LLM Training Pipeline: Pretraining → SFT → RLHF/DPO
+## 7. LLM Training Pipeline: Pretraining → SFT → RLHF/DPO
 
 *This is "how does a base model become ChatGPT" — commonly asked to distinguish candidates who've only ever called an API from those who understand what's under the hood.*
 
@@ -365,7 +510,7 @@ During inference, LLMs don't just pick the highest-probability next token; they 
 
 ---
 
-## 6. Prompt Engineering & Few-Shot Learning
+## 8. Prompt Engineering & Few-Shot Learning
 
 ### Core Techniques
 | Technique | Description |
@@ -401,7 +546,7 @@ During inference, LLMs don't just pick the highest-probability next token; they 
 
 ---
 
-## 7. Agents
+## 9. Agents
 
 ### What Makes an "Agent"
 An LLM wrapped in a loop that can: **reason → decide on an action (tool call) → observe result → repeat** until it reaches a final answer or goal — as opposed to a single-shot prompt→response.
@@ -438,7 +583,7 @@ Final Answer: It's 15°C and cloudy in London
 
 ---
 
-## 8. Model Context Protocol (MCP)
+## 10. Model Context Protocol (MCP)
 
 *Emerging standard for connecting LLMs to tools/data sources; increasingly asked in interviews, especially at AI-native companies.*
 
@@ -611,7 +756,7 @@ Benefits:
 
 ---
 
-## 9. Embeddings Deep-Dive
+## 11. Embeddings Deep-Dive
 
 *RAG and semantic search both live and die by embedding quality — worth understanding beyond "it turns text into vectors."*
 
@@ -656,7 +801,7 @@ Benefits:
 
 ---
 
-## 10. RAG (Retrieval-Augmented Generation)
+## 12. RAG (Retrieval-Augmented Generation)
 
 ### RAG Pipeline — Step by Step
 
@@ -686,7 +831,7 @@ Benefits:
 
 **Generator LLM selection:**
 - Context window needed (how much retrieved content + query fits)
-- Latency/cost requirements (GPT-4o vs GPT-4o-mini, Claude Opus vs Haiku)
+- Latency/cost requirements (larger flagship models vs smaller/faster tiers)
 - Instruction-following quality for grounded/citation-based answers
 - Open-source vs closed API (data privacy, cost at scale, self-hosting complexity)
 
@@ -705,7 +850,7 @@ Benefits:
 
 #### **Model Routing**
 - Use a small/cheap classifier (or LLM) to route queries to different models based on complexity
-- E.g., simple factual query → small fast model (Haiku/mini); complex reasoning → larger model (Opus/GPT-4o)
+- E.g., simple factual query → small fast model; complex reasoning → larger model
 - Can also route between **RAG vs no-RAG** (e.g., "hi, how are you" doesn't need retrieval)
 - Reduces cost and latency at scale
 
@@ -738,7 +883,7 @@ When retrieval fails or returns low-confidence results:
 
 ---
 
-## 11. Multimodal Models (Vision + Language)
+## 13. Multimodal Models (Vision + Language)
 
 *Increasingly asked, and easier than deep vision knowledge.*
 
@@ -755,7 +900,7 @@ When retrieval fails or returns low-confidence results:
 - **Use case**: zero-shot image classification, image-text retrieval, grounding text queries to images
 - **Tradeoff**: dual-encoder is efficient for retrieval but weaker than models with cross-attention between modalities
 
-### LLaVA, GPT-4V, Claude Vision
+### LLaVA-style Vision-Language Models
 - **Architecture**: vision encoder (ViT or similar) → adapter/projection → language model
 - **Process**: image → visual tokens → concatenate with text tokens → LLM processes unified sequence
 - **Capabilities**: image understanding, OCR, visual reasoning, object counting, diagram interpretation
@@ -767,7 +912,7 @@ When retrieval fails or returns low-confidence results:
 
 ---
 
-## 12. Graph RAG & Knowledge Graphs
+## 14. Graph RAG & Knowledge Graphs
 
 *Emerging area; shows up in interviews for advanced candidate pools.*
 
@@ -798,147 +943,7 @@ When retrieval fails or returns low-confidence results:
 
 ---
 
-## 13. Latest LLM Models (July 2026)
-
-*Know what's current — interviewers will reference new models, and "I haven't heard of that" hurts credibility.*
-
-### Frontier Closed Models
-
-#### **Claude (Anthropic)**
-- **Claude Mythos 5**: Frontier tier, best overall on HLE (Humanity's Last Exam), reasoning-focused
-- **Claude Opus 4.8**: Previous flagship, still very competitive, multimodal, 200K context
-- **Claude Sonnet 5**: Mid-tier workhorse, great balance of speed/quality, 200K context, ~1-2M tok/s throughput
-- **Claude Haiku 4.5**: Lightweight, fast, good for high-volume apps, 200K context
-- **Claude Fable 5**: Frontier-tier with safety controls (limited biology, cybersecurity outputs); strongest on SWE-bench coding (95.0%)
-
-**Key Anthropic innovation:** Constitutional AI + DPO alignment pipeline (no RLHF) → more stable, cheaper to train
-
-#### **GPT-5 Family (OpenAI)**
-- **GPT-5.4**: Flagship (March 2026), unified coding + general-purpose, **native computer use** (click, type, execute actions on screen)
-- **GPT-5.6 variants** (Luna, Sol, Terra): Reasoning tiers — adaptive computation based on problem difficulty
-- **GPT-5.6 Luna**: Lightweight variant, cost-optimized
-- All GPT-5 models: 1M+ context window, multimodal (text, image, audio), ~500K-1M tok/s
-
-**Key OpenAI innovation:** Configurable reasoning effort + inference-time scaling (similar to o1 reasoning model approach)
-
-#### **Gemini 3.x Family (Google)**
-- **Gemini 3.1 Pro**: Strong scientific reasoning (GPQA Diamond 94.3%), excellent multimodal (text, image, audio, video, PDF native)
-- **Gemini 3.5 Flash** (July 2026): 4× speed improvement over 3.1, still high quality, best for throughput-critical apps
-- **Gemini 3.6 Flash** (just released July 21, 2026): Latest iteration, fastest inference in frontier tier
-- Context: 1M+ tokens, document retrieval benchmark leader
-
-**Key Google innovation:** Native PDF, video, audio support in a single API call (Gemini 3.1 Pro+)
-
-#### **Other Closed Models**
-- **Grok 4.5** (xAI): Pure reasoning benchmark leader, cheapest in top-10 at $2/M tokens
-- **MiniMax M3** (Moonshot AI): Strong on open-weight/closed-weight hybrid pricing
-
-### Open-Weight Models (Self-Hostable)
-
-| Model | Size | Key Strength | Context | Use Case |
-|---|---|---|---|---|
-| **Llama 4 Scout** | 405B | Longest context (10M tokens!) | 10M | Document-dense workloads, bulk retrieval |
-| **DeepSeek V4 Pro** | 671B MoE | Reasoning + cost efficiency | 128K | Best open reasoning alternative |
-| **Qwen 3.7 Max** | 405B | Near-frontier reasoning (92.4% GPQA) | 200K | Self-hosted reasoning |
-| **GLM-5** | Variable | Strong coding + reasoning | 200K | Agentic workflows |
-| **MiniMax M2.5** | ~405B | SWE-bench 80.2% (rivals GPT-5.4 on coding) | 200K | Coding-heavy self-hosted |
-| **Kimi K3** | Unknown | Open weights promised July 27, 2026 | 200K+ | TBD (likely top-tier) |
-
-**Key trend:** Open models have closed the coding gap — MiniMax M2.5 at 80.2% SWE-bench rivals frontier closed models. For self-hosted deployment, the decision is now **capability-per-dollar** vs API convenience, not pure capability.
-
-### Model Selection Decision Tree (for interviews)
-
-**Step 1: Privacy/deployment constraints?**
-- Data cannot leave our infrastructure → open-weight (Llama 4, DeepSeek V4, Qwen)
-- API use OK → proceed to Step 2
-
-**Step 2: Task type?**
-- Coding/agentic (SWE-bench heavy) → Claude Fable 5 or Llama 4 Scout (open) or DeepSeek V4 Pro (open)
-- Scientific reasoning (GPQA heavy) → Gemini 3.1 Pro or Grok 4.5 or Qwen 3.7 Max
-- Multimodal (video/audio/PDF) → Gemini 3.5 Flash or Gemini 3.1 Pro
-- High-volume, latency-sensitive → GPT-5.6 Luna or Gemini 3.6 Flash (cheap + fast)
-- Long-context retrieval (100K+) → Llama 4 Scout (10M) or Claude Opus (200K)
-
-**Step 3: Latency budget?**
-- <1s TTFT critical → Gemini 3.6 Flash (4× faster) or Claude Sonnet 5
-- Moderate → Claude Opus or GPT-5.4
-- Batch/offline → optimize for tokens/sec throughput
-
-**Step 4: Cost per token?**
-- High volume → Gemini 3.6 Flash or open-weight model
-- Mixed budget → Claude Sonnet 5 or GPT-5.6 Luna (mid-tier pricing)
-- Frontier quality → Claude Opus or GPT-5.4 (highest cost)
-
-### Recent Innovations to Mention
-
-#### **Reasoning Models (Inference-Time Scaling)**
-- GPT-5 and Claude models now support adaptive reasoning — model can spend more compute on hard problems
-- Trades latency for accuracy — useful for reasoning-heavy workloads, not for chat
-- "Why it matters": pushing frontier from model scale to inference-time optimization instead
-
-#### **Agentic AI as Default**
-- All frontier models now support: tool use, planning, multi-step memory, computer use (GPT-5.4)
-- Agents no longer require a separate scaffolding layer — baked into model behavior
-- "Why it matters": interviewer will ask "how would you build an agent" — the answer is simpler now (just use the model directly with tool definitions)
-
-#### **Multimodal Convergence**
-- Gemini 3.1 Pro native support for text, image, audio, video, PDF in single API call
-- No more separate vision encoder — end-to-end multimodal
-- "Why it matters": RAG pipelines can now ingest videos/PDFs directly without preprocessing
-
-#### **Context Window Explosion**
-- Llama 4 Scout: 10M tokens (100K pages of text)
-- GPT-5, Claude, Gemini all: 1M+ standard
-- Context is no longer the bottleneck; **retrieval precision** is
-- "Why it matters": chunking strategy matters less (can fit more docs), but retrieval quality matters more (don't get lost in the middle with 10M tokens)
-
-### Benchmark Comparison (July 2026)
-
-| Benchmark | Leader | Score | Runner-Up | Score |
-|---|---|---|---|---|
-| **GPQA Diamond** (hard reasoning) | Claude Mythos 5 | 94.6% | Gemini 3.1 Pro | 94.3% |
-| **SWE-bench Verified** (coding) | Claude Fable 5 | 95.0% | Claude Opus 4.8 | 88.6% |
-| **HLE** (all-around) | Claude Mythos 5 | 53.3% | Claude Fable 5 | 52.8% |
-| **MRCR 1M** (document retrieval in 1M context) | Claude Opus 4.7 | 92.9% | Gemini 3.1 Pro | 92.1% |
-| **ARC-AGI-2** (abstract reasoning) | Gemini 3.1 Pro | 77.1% | GPT-5.4 | 76.3% |
-
-**Interview note:** Never cite a single benchmark — always mention task-specific winners. "Claude is best" is wrong; "Claude Fable 5 wins on SWE-bench but Gemini 3.1 Pro leads on scientific reasoning" is right.
-
-### Pricing Context (as of July 2026)
-
-| Model Tier | Input $/M tokens | Output $/M tokens | Typical Use |
-|---|---|---|---|
-| Frontier (Mythos, GPT-5.4) | $5-15 | $20-50 | Reasoning-heavy, low-volume |
-| High (Opus, Sonnet, Gemini 3.1 Pro) | $1-3 | $5-15 | Production workloads, balanced |
-| Mid (Claude Sonnet, GPT Luna, Gemini Flash) | $0.30-1 | $1-5 | High-volume, cost-sensitive |
-| Lightweight (Haiku, GPT mini) | $0.05-0.30 | $0.15-1 | Bulk processing, RAG reranking |
-| Open-weight self-hosted | $0 API | (your infra cost) | Privacy-critical, high volume |
-
-**Interview angle:** "Cost-per-token is half the story. What matters is cost-per-task — a cheaper model might need twice as many retries or retrieval calls, flipping the total cost calculation."
-
-### What to Say in Interviews
-
-**"We started with GPT-4o but switched to Claude Sonnet 5 because..."**
-- latency requirements (Sonnet is faster)
-- better instruction-following for structured outputs
-- agentic tool-use was more reliable
-- 200K context let us retrieve more docs upfront (simpler pipeline)
-
-**"We evaluated Llama 4 Scout internally because..."**
-- 10M context = no chunking needed for large documents
-- self-hosted = data privacy + cost at 100K+ QPS
-- tradeoff: inference latency (slower than cloud API), ops burden
-
-**"On the multimodal side, we chose Gemini 3.1 Pro because..."**
-- native video support (no preprocessing)
-- PDF handling built-in (no PDF extraction pipeline)
-- scientific reasoning benchmark lead for physics/chemistry domain
-
-**DON'T say:** "Claude is the best model" or "GPT-5 is always better." Interviewers know this is lazy thinking.
-
----
-
-## 14. Distributed Training & Inference (surface-level, but expect it)
+## 15. Distributed Training & Inference (surface-level, but expect it)
 
 ### Why It's Needed
 Modern LLMs (billions of params) don't fit on a single GPU's memory, and training on huge datasets on one device would take forever — so both **model** and **data** get split across multiple GPUs/nodes.
@@ -953,11 +958,11 @@ Modern LLMs (billions of params) don't fit on a single GPU's memory, and trainin
 
 **Interview soundbite:** *"Data parallelism scales throughput, tensor/pipeline parallelism scale model size — real large-scale training combines all three (3D parallelism)."*
 
-### Inference-side Scaling (ties back to Section 4)
+### Inference-side Scaling (ties back to Section 6)
 - **Batching** (continuous batching) — throughput lever
 - **Tensor parallelism at inference** — split a huge model across GPUs just to fit it in memory / lower latency
 - **Quantization** — reduces per-GPU memory footprint, allows single-GPU serving
-- **KV cache + PagedAttention** — the memory-efficiency lever specific to serving (see Section 4)
+- **KV cache + PagedAttention** — the memory-efficiency lever specific to serving (see Section 6)
 
 ### Cost/Latency/Throughput Tradeoff (a favorite system-design thread)
 - More GPUs / larger batch → higher throughput, but higher latency per request if batching too aggressively
@@ -965,7 +970,7 @@ Modern LLMs (billions of params) don't fit on a single GPU's memory, and trainin
 
 ---
 
-## 15. Observability & Evaluation
+## 16. Observability & Evaluation
 
 ### Why It Matters
 LLM/RAG systems are non-deterministic and can fail silently (hallucination, retrieval miss, prompt drift) — traditional software monitoring (uptime, latency) isn't enough.
@@ -990,7 +995,7 @@ LLM/RAG systems are non-deterministic and can fail silently (hallucination, retr
 
 #### LLM Output Evaluation
 - **Reference-based**: BLEU/ROUGE (n-gram overlap — weak for open-ended generation), exact match (good for QA with short answers)
-- **LLM-as-a-judge**: use a strong LLM (e.g., GPT-4o) to score outputs on rubrics (correctness, coherence, helpfulness) — scalable but has known biases (favors verbose answers, position bias in pairwise comparisons)
+- **LLM-as-a-judge**: use a strong LLM to score outputs on rubrics (correctness, coherence, helpfulness) — scalable but has known biases (favors verbose answers, position bias in pairwise comparisons)
 - **Human evaluation**: gold standard but expensive/slow — often used to validate LLM-judge alignment
 - **Task-specific metrics**: for classification-style outputs, use precision/recall/F1; for structured output, JSON schema validity rate
 
@@ -1020,9 +1025,76 @@ LLM/RAG systems are non-deterministic and can fail silently (hallucination, retr
 
 ---
 
-## 16. Testing & Eval-Driven Development for LLM Apps
+## 17. Failure Diagnosis Playbooks
 
-*The natural bridge between "Evaluation" (Section 15) and real engineering practice — how do you actually prevent regressions in a non-deterministic system?*
+*The single most common category of open-ended AI/ML interview question is "X is broken/slow/wrong — walk me through how you'd find out why." This section is a repeatable framework, not a list of unrelated fixes: for every failure type below, triage into the right bucket first, then isolate, then fix. Interviewers are grading the triage step as much as the final answer.*
+
+### The General Pattern
+1. Split the symptom into mutually exclusive buckets before touching code — most wrong answers/slow requests/cost spikes have 3-5 plausible root causes that produce identical-looking symptoms.
+2. Pick the cheapest diagnostic that discriminates between buckets (log a raw score, check a timestamp, count tokens) before reaching for a heavier fix.
+3. Fix the actual bucket, don't shotgun-fix all of them — that's how you burn interview time, and in production, burn on-call time.
+
+### 1. RAG Gives Wrong Answers
+
+**First fork — is the answer grounded in what was retrieved, or not?**
+
+| Bucket | How you tell | Likely cause | Fix |
+|---|---|---|---|
+| **Faithfulness failure** | Answer isn't supported by the retrieved chunks at all | Model ignoring context, falling back on parametric memory, or over-extrapolating | Strip the prompt down to bare context + question and retest; check if the hallucinated fact matches the base model's general knowledge (parametric leakage); lower temperature; add an explicit "only use the provided context" instruction |
+| **Retrieval failure** | Answer faithfully reflects the retrieved chunks, but those chunks are wrong/irrelevant | Embedding model mismatch, bad chunking, similarity metric mismatch, metadata filter excluding relevant docs | Pull raw top-k + similarity scores and eyeball them; high score + wrong topic → embedding/domain issue; low scores across the board → genuine coverage gap in the index |
+| **Source data failure** | Retrieved chunks are correct and relevant, answer faithfully reflects them, but they're simply wrong | Stale docs, conflicting versions, upstream data entry error | Audit the corpus, not the code — check doc freshness/versioning, look for contradictory sources on the same topic |
+| **Silent pipeline bug** | Every stage looks fine in isolation, answer still wrong end-to-end | Index-time vs query-time embedding version drift, chunk-ID→text mapping scrambled on reindex, prompt template silently truncating context under a token budget | Check the boring stuff first: embedding model version pinned identically on both sides, chunk IDs resolve to the text you expect, log the *final assembled prompt* actually sent to the LLM — not what you think you sent |
+
+**Interview soundbite:** *"A wrong RAG answer isn't one bug category — the first move is figuring out whether the failure is in retrieval, generation faithfulness, the source data, or a silent pipeline mismatch, because those four need completely different fixes."*
+
+### 2. Latency Problems
+
+| Symptom | Likely bucket | Isolate | Fix |
+|---|---|---|---|
+| High **TTFT** | Prefill-bound (long prompt) or queueing-bound (GPU saturation) | Check prompt token count vs typical; check queue depth/concurrent requests at the provider | Shrink context, prefix-cache the system prompt, reduce retrieved chunk count; or add capacity / provisioned throughput |
+| Good TTFT, slow **tokens/sec** | Decode-bound | Check output length, KV cache size vs GPU memory bandwidth, batch size | Speculative decoding, smaller/faster model for this path, right-size batch |
+| **P50 fine, P99 terrible** | Tail latency — one slow dependency blocking, GC pause, a hot/overloaded shard | Trace individual slow requests, not aggregates; check for retries without timeouts | Timeouts + circuit breakers on downstream calls, shard rebalancing, isolate noisy neighbors |
+| **Latency degraded gradually over weeks**, no code change | Index growth past ANN sweet spot, traffic pattern shift, silent chunk-count creep | Compare index size/query volume now vs when it was fast; check if a routing/chunk-count parameter drifted | Reindex/reshard the vector DB, re-tune HNSW parameters, audit config drift |
+
+**Interview soundbite:** *"In a RAG or agent pipeline, generation latency almost always dominates — so the highest-leverage fixes are semantic caching and streaming, not shaving milliseconds off vector search."*
+
+### 3. Cost Blowups
+
+- **"Bill 3x'd, no code changed"** → check traffic growth first (boring, often the real answer), then a silent prompt-length regression (debug logging leaking into the prompt, a chunk-count bug retrieving 50 instead of 5), then a retry storm burning tokens on repeated failures.
+- **"Cut inference cost 50% without hurting quality"** → model routing (cheap model for easy queries), prompt/prefix caching, trimming redundant context, distillation/fine-tune to a smaller model for the common case, batching where real-time isn't required.
+
+### 4. Fine-Tuning Failures (beyond "loss fine, output garbage" in the coding/debugging section)
+
+| Symptom | Likely cause | Fix |
+|---|---|---|
+| Model got *worse* at things it used to do well | Catastrophic forgetting — LR too high, fine-tune set too narrow | Lower LR, mix in general-purpose data (replay), use LoRA to limit drift |
+| Training loss ↓ but eval score flat/worse | Overfitting to train distribution, eval/train leakage, loss doesn't correlate with the metric you actually care about | Check eval set independence, correlate loss vs target metric on a held-out slice before trusting either |
+| Multi-GPU slower than single-GPU | Communication overhead dominating — wrong parallelism strategy for the hardware | Keep tensor parallelism within fast-interconnect nodes; check actual GPU utilization vs time spent in all-reduce |
+
+### 5. Agent Failures (diagnosis, not just the failure-mode list in the Agents section)
+
+- **Stuck in a tool-call loop**: instrument by logging (tool, args) tuples per step and flagging repeats — "add a max iteration limit" is the fix, but the interview wants to hear *how you'd detect it happening in production*, not just cap it blindly.
+- **Agent claims an action succeeded but didn't**: don't trust the model's self-report — verify via the actual tool/API response (a write returned 200, a file exists, a record's `updated_at` changed) before letting the agent proceed.
+
+### 6. Forecasting-Specific Failures (siblings to the backtest-vs-production drill in the coding section)
+
+- **Consistently biased in one direction** (not just "inaccurate") → check for a systematic issue: promo effects not fully captured, or a log-transform back-transformation bug (a very common silent one — forgetting to exponentiate back after modeling in log space skews every prediction the same direction).
+- **New-SKU forecasts are terrible** → check whether cold-start fallback logic (analogous product, hierarchical pooling) is actually firing, or whether the model is silently defaulting to zero/global average for unseen IDs.
+
+### 7. "Eval Looks Great, Users Are Unhappy"
+
+- Golden set doesn't represent real production traffic distribution (built from easy/clean examples, users ask messier things)
+- LLM-as-judge bias inflating scores (verbosity bias, position bias) — validate against a human-labeled sample
+- Eval measuring the wrong thing entirely (fluency/coherence instead of correctness/faithfulness)
+- **A/B test shows no significant difference** — before concluding "no effect," check if the test was even powered to detect one at that sample size; a null result and an underpowered test look identical from the outside
+
+**Interview soundbite:** *"A failure-diagnosis question is really testing whether you triage before you debug — wrong answers, slow requests, and cost spikes all have several plausible root causes that look identical from the outside, and picking the wrong bucket first wastes the whole investigation."*
+
+---
+
+## 18. Testing & Eval-Driven Development for LLM Apps
+
+*The natural bridge between "Evaluation" (Section 16) and real engineering practice — how do you actually prevent regressions in a non-deterministic system?*
 
 ### The Core Problem
 Traditional unit tests assert exact outputs. LLM outputs are non-deterministic and open-ended — you can't `assertEqual(response, "expected string")`. Testing strategy has to shift from exact-match to **quality-threshold** and **regression-detection** based approaches.
@@ -1052,151 +1124,6 @@ Traditional unit tests assert exact outputs. LLM outputs are non-deterministic a
 ### Practical Tooling Mentions
 - Frameworks: **RAGAS**, **DeepEval**, **Promptfoo** (prompt regression testing specifically), **LangSmith Evaluators**
 - CI integration pattern: eval suite runs automatically on every PR that touches prompts/retrieval config, blocks merge if scores regress beyond threshold — same mental model as traditional test coverage gates
-
----
-
-## 17. Time Series Concepts
-
-*Foundational for demand forecasting (Section 18) and for any "explain classical vs ML forecasting" interview question.*
-
-### Core Terminology
-
-| Term | Definition |
-|---|---|
-| **Trend** | Long-term upward/downward movement in the series |
-| **Seasonality** | Regular, fixed-period pattern (e.g., weekly, yearly) |
-| **Cyclic pattern** | Fluctuations without fixed period (e.g., business cycles) — differs from seasonality, which has a fixed known period |
-| **Residual / Noise** | What's left after removing trend + seasonality — ideally close to white noise |
-| **Stationarity** | Statistical properties (mean, variance, autocovariance) don't change over time |
-| **Lag** | Value of the series at a previous time step (t-1, t-7, etc.) |
-| **White noise** | Series with no autocorrelation, constant mean/variance — "unpredictable" component |
-| **Random walk** | `y_t = y_{t-1} + ε_t` — next value is previous value plus noise; classic non-stationary series |
-| **Autocorrelation** | Correlation of a series with a lagged version of itself |
-
-### Stationarity — Why It Matters
-- Most classical forecasting models (ARIMA family) **assume stationarity** — a non-stationary series (trending mean, changing variance) breaks the model's assumptions and produces unreliable forecasts
-- **Tests**: 
-  - **ADF (Augmented Dickey-Fuller)**: null hypothesis = series has a unit root (non-stationary); low p-value → reject null → stationary
-  - **KPSS**: opposite null hypothesis (series IS stationary) — often used alongside ADF to cross-check
-- **Fixes for non-stationarity**: differencing (`y_t - y_{t-1}`), log transform (stabilizes variance), seasonal differencing (`y_t - y_{t-m}`)
-
-### Decomposition
-- **Additive model**: `Y = Trend + Seasonality + Residual` — use when seasonal fluctuations are roughly constant in magnitude regardless of trend level
-- **Multiplicative model**: `Y = Trend × Seasonality × Residual` — use when seasonal fluctuations grow/shrink proportionally with the trend level (common in retail/demand data)
-- **Methods**: classical decomposition (simple moving-average based), **STL (Seasonal-Trend decomposition using Loess)** — more robust to outliers and handles seasonality that changes slowly over time, generally preferred over classical decomposition in practice
-
-### ACF & PACF (model identification)
-- **ACF (Autocorrelation Function)**: correlation between the series and its lag, including indirect effects passed through intermediate lags
-- **PACF (Partial Autocorrelation Function)**: correlation between the series and its lag **after removing the effect of intermediate lags** — isolates the direct relationship
-- **Usage for classical model order selection**:
-  - PACF cuts off sharply after lag p → suggests **AR(p)**
-  - ACF cuts off sharply after lag q → suggests **MA(q)**
-  - Both decay gradually → suggests an ARMA (mixed) process
-
-### ARIMA / SARIMA / SARIMAX
-- **ARIMA(p, d, q)**:
-  - **p**: AR order — regression on the series' own past values
-  - **d**: differencing order — number of times differenced to achieve stationarity
-  - **q**: MA order — regression on past forecast errors
-- **SARIMA(p,d,q)(P,D,Q,m)**: adds a seasonal component with its own AR/I/MA orders and seasonal period `m` (e.g., m=12 for monthly data with yearly seasonality)
-- **SARIMAX**: SARIMA + exogenous regressors (e.g., price, promotions, holidays, weather) — very relevant for demand forecasting since demand is rarely driven by history alone
-
-### Exponential Smoothing Family
-| Method | Handles |
-|---|---|
-| **SES (Simple Exponential Smoothing)** | Level only — no trend, no seasonality |
-| **Holt's Linear Trend** | Level + trend |
-| **Holt-Winters** | Level + trend + seasonality (additive or multiplicative) |
-
-- Weighted average of past observations with exponentially decaying weights — recent observations matter more
-- Simple, fast, surprisingly strong baseline, especially at short horizons
-
-### Prophet (Meta)
-- Additive decomposition model: `y(t) = trend(t) + seasonality(t) + holidays(t) + ε`
-- Seasonality modeled via **Fourier terms**, trend via piecewise linear/logistic growth with automatic changepoint detection
-- **Strengths**: handles missing data and outliers gracefully, easy to add holiday effects, minimal tuning needed, good default baseline
-- **Weaknesses**: often underperforms a well-tuned ARIMA or ML model on accuracy; less suited for very high-frequency or highly irregular series
-
-### ML & Deep Learning Approaches
-- **Feature-based ML (XGBoost/LightGBM)**: reframe forecasting as tabular regression using lag features, rolling statistics, calendar features — very strong and popular in industry/competitions (e.g., M5 competition winners)
-- **RNN/LSTM/GRU**: sequence models that learn temporal patterns directly; historically strong but increasingly outperformed by transformer-based or global models
-- **DeepAR (Amazon)**: autoregressive RNN trained **globally across many related time series**, produces **probabilistic** forecasts (full predictive distribution, not just a point estimate) — foundational for Amazon Forecast
-- **Temporal Fusion Transformer (TFT)**: attention-based, handles static covariates, known future inputs (e.g., planned promotions), and past observed inputs jointly; provides interpretable attention weights
-- **N-BEATS / N-HiTS**: pure deep learning architectures (no recurrence/attention needed) that perform strongly on univariate forecasting benchmarks
-- **PatchTST / Informer**: transformer variants optimized for long-horizon forecasting efficiency
-
-### Time-Series-Specific Cross-Validation
-- **Never use random k-fold** — it leaks future information into training (a huge, common mistake)
-- **Walk-forward / rolling-origin validation**: train on data up to time T, validate on T+1...T+h, then slide the origin forward and repeat
-- **Expanding window**: training set grows each fold (uses all available history)
-- **Sliding window**: training set is a fixed-size window that moves forward (useful when older data is less relevant, e.g., due to concept drift)
-
-### Evaluation Metrics
-| Metric | Notes |
-|---|---|
-| **MAE** | Mean Absolute Error — simple, same units as target |
-| **RMSE** | Penalizes large errors more (squared term) |
-| **MAPE** | Mean Absolute Percentage Error — intuitive but undefined/unstable near zero actuals, asymmetric (penalizes over-forecast less than under-forecast) |
-| **sMAPE** | Symmetric MAPE — attempts to fix MAPE's asymmetry, still has edge cases near zero |
-| **WAPE (Weighted APE)** | Aggregates errors and actuals before dividing — much more stable than MAPE for sparse/low-volume series, very common in demand forecasting |
-| **MASE (Mean Absolute Scaled Error)** | Scale-free — compares model error to a naive (seasonal) forecast's error; MASE < 1 means you're beating the naive baseline |
-
-**Interview trap:** MAPE breaks down badly on intermittent/low-volume demand data (division by near-zero actuals) — WAPE or MASE is the safer default for demand forecasting eval.
-
-### Multi-Horizon Forecasting Strategies
-- **Direct**: train a separate model per forecast horizon (h=1, h=2, ... h=n) — no error accumulation, but more models to maintain
-- **Recursive**: forecast h=1, feed it back as input to forecast h=2, and so on — simple, but errors compound over the horizon
-- **Multi-output**: single model predicts the entire horizon vector at once (common in DL models like TFT, N-BEATS) — captures cross-horizon dependencies directly
-
----
-
-## 18. Demand Forecasting
-
-*Applies Section 17's time series toolbox to the specific, very common business problem of predicting product/SKU-level demand for inventory and supply chain decisions.*
-
-### Why Demand Forecasting Is Different From Generic Time Series
-- You're rarely forecasting **one** series — usually thousands to millions of SKU × location combinations
-- Forecasts feed directly into **business decisions with asymmetric costs** (stockout = lost sales/customer trust; overstock = holding cost, waste, markdowns) — accuracy alone isn't the whole story, forecast **bias** matters too
-- Heavy external drivers: promotions, pricing, seasonality, weather, competitor actions, macroeconomic factors
-
-### Key Challenges
-
-| Challenge | Why it's hard | Common fix |
-|---|---|---|
-| **Intermittent / sparse demand** | Many periods with zero demand (e.g., slow-moving SKUs) — MAPE/RMSE misleading, classical ARIMA struggles | **Croston's method**, **TSB (Teunter-Syntetos-Babai)**, or global ML models that pool information across SKUs |
-| **New product / cold start** | No historical data at all | Use analogous/similar product history, hierarchical pooling, attribute-based (content) features instead of pure history |
-| **Promotions & price changes** | Sudden demand spikes not explainable by history alone | Include promo/price as **exogenous regressors** (SARIMAX, feature-based ML, TFT known-future-inputs) |
-| **Hierarchical consistency** | Forecasts at SKU level must roll up consistently to category/region/total level | **Reconciliation**: top-down, bottom-up, middle-out, or **optimal reconciliation (MinT)** which adjusts all levels for statistical coherence |
-| **Scale (thousands of series)** | Fitting individual ARIMA per SKU doesn't scale operationally | **Global models** — one model trained across all series (with SKU/store as a categorical/embedding feature), shares learned patterns, better cold-start behavior |
-
-### Modeling Approaches in Practice
-
-- **Classical, per-series**: ARIMA/SARIMA/Prophet fit independently per SKU — interpretable, fine for a small number of high-value series, doesn't scale well and can't share information across related products
-- **Global feature-based ML**: single LightGBM/XGBoost model trained across all SKU-store combinations with lag features + calendar + price/promo + SKU/store as categorical — currently one of the most common industry-strength approaches (this is essentially what won the M5 forecasting competition)
-- **Global deep learning**: DeepAR, TFT, N-BEATS trained across the full panel of series — best when there's enough data volume to benefit from shared representation learning, and when probabilistic output is needed
-- **Amazon Forecast (managed AWS service)**: AutoML wrapper that tries multiple algorithms (ARIMA, ETS, Prophet, DeepAR+, CNN-QR) and picks/ensembles the best per use case — removes most of the algorithm-selection burden (see Section 21 for deployment details)
-
-### Feature Engineering for Demand Forecasting
-- **Calendar features**: day-of-week, month, is_holiday, is_weekend, days-to-next-holiday
-- **Lag features**: t-1, t-7, t-14, t-28, t-365 (capture weekly/yearly seasonality)
-- **Rolling statistics**: rolling mean/std/min/max over multiple windows (7d, 28d, 90d)
-- **Price/promotion features**: current price, discount %, promo flag, days since last promo
-- **External regressors**: weather, local events, competitor pricing (when available)
-- **Entity features**: SKU category, brand, store cluster, or learned embeddings for high-cardinality IDs
-
-### Probabilistic Forecasting (critical for inventory decisions)
-- A single point forecast isn't enough to set safety stock — you need to know the **distribution** of likely demand
-- Models output **quantile forecasts** (e.g., P10, P50, P90) trained via **pinball/quantile loss**
-- Business use: set reorder points/safety stock based on a target **service level** (e.g., stock to the P90 forecast to achieve ~90% fill rate), rather than just the mean forecast
-
-### Evaluation — Business-Aligned Metrics
-- **WAPE** is the industry default for demand forecasting (robust to zero/low-volume SKUs, aggregates naturally across a portfolio)
-- **Bias metrics** (mean error, not absolute) matter separately from accuracy — a model that's "accurate on average" but systematically under-forecasts will still cause chronic stockouts
-- **Business-facing metrics**: fill rate / service level achieved, inventory holding cost vs. stockout cost tradeoff, forecast value added (FVA) — is the model actually beating a naive/manual forecast?
-
-**Interview soundbite:** *"In demand forecasting, WAPE beats MAPE because MAPE blows up on near-zero actuals, which are common with slow-moving SKUs — WAPE aggregates errors and actuals before dividing, so it stays stable at portfolio scale."*
-
-**Interview soundbite:** *"Point forecasts aren't enough for inventory decisions — you need quantile/probabilistic forecasts to translate a forecast into a safety-stock and service-level decision."*
 
 ---
 
@@ -1291,6 +1218,74 @@ Checklist to walk through:
 3. Check for **concept drift** — has the underlying demand pattern shifted (new competitor, macro shock) since the model was trained?
 4. Check if the backtest window covers the same seasonality/regime as the production period being evaluated
 
+### Live "find the bug" drills (planted bugs — practice spotting these without running the code first)
+
+These are the kind of snippets an interviewer hands you and says "this is broken, why?" Read each one, form a hypothesis before scrolling to the answer, then verify by running it mentally or on paper.
+
+**Drill 1 — Attention mask applied in the wrong place**
+```python
+def attention(Q, K, V, mask=None):
+    d_k = Q.shape[-1]
+    scores = Q @ K.transpose(-1, -2) / np.sqrt(d_k)
+    weights = softmax(scores, axis=-1)
+    if mask is not None:
+        weights = np.where(mask == 0, 0, weights)  # <-- bug
+    return weights @ V
+```
+*Bug:* masking is applied **after** softmax by zeroing weights, instead of masking the raw `scores` with `-inf`/`-1e9` **before** softmax. Zeroing post-softmax weights doesn't renormalize the remaining probabilities — they no longer sum to 1, so the output is a silently-wrong weighted average. Masking must happen on logits, before softmax, so the softmax itself redistributes probability mass correctly over the unmasked positions.
+
+**Drill 2 — Embedding mismatch that "looks" like a retrieval quality issue**
+```python
+# Indexing time
+embeddings = model_a.encode(chunks)          # model_a
+index.add(embeddings)
+
+# Query time (different file, written weeks later)
+query_vec = model_b.encode(query)            # model_b — different model!
+results = index.search(query_vec, k=5)
+```
+*Bug:* two different embedding models used at index-time vs query-time. Their vector spaces aren't aligned, so similarity scores are meaningless even though the code runs without error and returns "results." This is the single most common silent RAG failure — always check that the encode call at query time is provably the same model/version/checkpoint as at index time.
+
+**Drill 3 — LoRA that never learns**
+```python
+class LoRALinear(nn.Module):
+    def __init__(self, base_layer, r=8, alpha=16):
+        super().__init__()
+        self.base = base_layer  # <-- bug: base params never frozen
+        in_dim, out_dim = base_layer.in_features, base_layer.out_features
+        self.A = nn.Parameter(torch.randn(r, in_dim) * 0.01)
+        self.B = nn.Parameter(torch.zeros(out_dim, r))
+        self.scale = alpha / r
+
+    def forward(self, x):
+        return self.base(x) + (x @ self.A.T @ self.B.T) * self.scale
+```
+*Bug:* missing `for p in self.base.parameters(): p.requires_grad = False`. Without freezing, the optimizer updates the full base weight matrix as well as A/B — you're doing full fine-tuning with extra unnecessary parameters, not LoRA. Loss may look fine (it's still training something), but you lose LoRA's entire point: small trainable footprint, easy to swap adapters, fast to checkpoint. Symptom in practice: optimizer state / checkpoint size is much larger than expected for the given `r`.
+
+**Drill 4 — Walk-forward CV that quietly leaks the future**
+```python
+def train_test_splits(df, n_splits=5):
+    df = df.sample(frac=1).reset_index(drop=True)  # <-- bug: shuffles time order
+    fold_size = len(df) // n_splits
+    for i in range(n_splits):
+        test_idx = df.index[i*fold_size:(i+1)*fold_size]
+        train_idx = df.index.difference(test_idx)
+        yield train_idx, test_idx
+```
+*Bug:* `df.sample(frac=1)` shuffles rows before splitting, destroying temporal order. This is random k-fold wearing a walk-forward costume — training folds can contain rows chronologically after the test fold, leaking future information. Backtest metrics will look great; production will not, because in production you never have future data. Fix: sort by timestamp, then split by an expanding or sliding time window, never shuffle.
+
+**Drill 5 — WAPE computed in a way that hides the real error**
+```python
+def wape(actual, forecast):
+    return np.mean(np.abs(actual - forecast) / actual)  # <-- bug: this is MAPE, not WAPE
+```
+*Bug:* this divides *inside* the mean, per-row — that's MAPE (and will blow up or divide-by-zero on any zero-demand SKU). Correct WAPE aggregates numerator and denominator **before** dividing:
+```python
+def wape(actual, forecast):
+    return np.sum(np.abs(actual - forecast)) / np.sum(actual)
+```
+This is a good one to have memorized cold, since "explain why your WAPE implementation is actually WAPE and not MAPE with extra steps" is a realistic follow-up.
+
 ### Likely small coding asks
 - Implement top-k / top-p (nucleus) sampling from logits
 - Implement a simple token-bucket rate limiter for API calls
@@ -1340,9 +1335,9 @@ User → API Gateway → [Cache check] → Router →
 
 ## 21. Deploying Forecasting & RAG Solutions on AWS
 
-*A very common "walk me through a production deployment" prompt — interviewers want to see you can name the right AWS service for each stage and explain why, not just say "we used SageMaker for everything."*
+*A very common "walk me through a production deployment" prompt — interviewers want to see you can name the right service for each stage, justify it against alternatives (including non-AWS/local options), and reason about latency, throughput, and cost, not just say "we used SageMaker for everything."*
 
-### 21.1 Deploying a Demand Forecasting Solution on AWS
+### 20.1 Deploying a Demand Forecasting Solution on AWS
 
 #### End-to-end architecture:
 
@@ -1377,14 +1372,33 @@ S3 (raw sales/transactions data)
 | Security | **IAM roles (least privilege)**, **VPC endpoints** | Keep data access scoped per pipeline stage; avoid public internet egress for data in transit between services |
 
 **Design notes worth mentioning in an interview:**
-- Forecasting is inherently **batch/scheduled**, not real-time — this simplifies serving considerably vs an LLM RAG system (no need for low-latency hosted endpoints in most cases)
+- Forecasting is inherently **batch/scheduled**, not real-time — this simplifies serving considerably vs an LLM RAG system (no need for low-latency hosted endpoints in most cases, so API Gateway/load balancing concerns barely apply here)
 - Retraining cadence is a business tradeoff: too frequent = wasted compute + noisy model churn; too infrequent = stale model missing recent trend/promo shifts — typically weekly or monthly for demand forecasting
 - Amazon Forecast vs custom SageMaker pipeline is a classic **build vs buy** tradeoff: Forecast gets you to production fast with good-enough accuracy; custom SageMaker pipelines are justified when you need probabilistic reconciliation across a hierarchy, proprietary features, or tighter cost control at very large SKU counts
+- **Non-AWS/local alternative worth naming**: if you're not committed to AWS, the same pipeline maps to open-source tooling — Airflow/Prefect/Dagster for orchestration instead of Step Functions, a self-hosted Postgres/Parquet-on-object-storage instead of Redshift, and `statsforecast`/`neuralforecast`/`darts` (open-source Python libraries) running on plain EC2/on-prem GPUs or even a single beefy machine instead of Amazon Forecast. This is a legitimate answer when the interviewer asks "what if you weren't on AWS" — batch forecasting at moderate SKU counts (tens of thousands, not millions) doesn't strictly need managed services; it needs a scheduler and a place to write Parquet files. Managed AWS services buy you less ops burden, not capability you couldn't get otherwise.
 
-### 21.2 Deploying a RAG Solution on AWS
+### 20.2 Deploying a RAG Solution on AWS
 
 #### End-to-end architecture:
 
+```
+Users → Route 53 (DNS) → CloudFront (CDN, optional, for static assets/UI)
+   → Application Load Balancer (ALB) or API Gateway
+        → API Gateway: request throttling, auth (Cognito/API keys), request validation, usage plans
+        → ALB: needed instead of/alongside API Gateway when routing to long-lived
+          ECS/Fargate services (agentic orchestration, streaming responses, WebSocket connections)
+   → [Cache check: ElastiCache Redis — semantic cache for repeated/similar queries]
+   → Compute layer:
+        ├─ Lambda (simple retrieve-then-generate, short-lived, auto-scales per request)
+        └─ ECS/Fargate (multi-step agentic RAG, longer-running orchestration, avoids Lambda's execution
+                          time limit and cold-start hit on the hot path)
+   → Retrieve top-k from vector store → (optional) rerank
+   → Assemble prompt → Bedrock Runtime (invoke Claude/other model)
+   → Bedrock Guardrails (PII/content filtering) → Response to user (streamed if supported)
+   → Observability: CloudWatch (metrics/logs) + X-Ray (distributed tracing) + Bedrock invocation logging
+```
+
+**Document ingestion side (offline, feeds the vector store above):**
 ```
 S3 (raw documents: PDFs, HTML, Confluence exports, etc.)
    → Ingestion & chunking (Lambda for small scale, or Glue jobs for large batch)
@@ -1394,16 +1408,16 @@ S3 (raw documents: PDFs, HTML, Confluence exports, etc.)
         ├─ Amazon Kendra — managed enterprise semantic search, less retrieval tuning control
         ├─ Aurora PostgreSQL + pgvector — if already standardized on relational DBs
         └─ Bedrock Knowledge Bases — fully managed RAG (handles chunking + embedding + retrieval end-to-end)
-   → Query path: API Gateway → Lambda (or ECS/Fargate for heavier agent orchestration)
-        → Retrieve top-k from vector store → (optional) rerank
-        → Assemble prompt → Bedrock Runtime (invoke Claude/other model)
-        → Bedrock Guardrails (PII/content filtering) → Response to user
-   → Semantic cache: ElastiCache (Redis) for repeated/similar queries
-   → Auth: Cognito (end users) + IAM (service-to-service)
-   → Observability: CloudWatch (metrics/logs) + X-Ray (distributed tracing) + Bedrock invocation logging
-   → CI/CD: CodePipeline + CodeBuild for automated deployment of Lambda/ECS services
-   → Networking: VPC with PrivateLink to Bedrock for private connectivity, security groups scoping access
 ```
+
+#### API Gateway, load balancing, and latency — the parts that actually matter for RAG serving
+
+- **API Gateway's job here** isn't just routing — it's the first line of defense for a public-facing RAG endpoint: request throttling (protects the LLM backend from being overwhelmed, since LLM inference is the expensive/slow part), API-key or Cognito-based auth, request/response validation (reject malformed payloads before they cost you an LLM call), and usage plans (per-customer rate limits/quotas for a multi-tenant product).
+- **API Gateway vs ALB**: API Gateway is the default for simple request/response Lambda-backed RAG (its own scaling is fully managed, integrates natively with Lambda and Cognito). Once the RAG flow becomes agentic — multiple tool calls, streaming tokens back to the client, WebSocket connections for long-lived sessions — you outgrow API Gateway + Lambda's constraints (Lambda's ~15 min execution cap, and REST API Gateway doesn't stream well) and move to an **ALB in front of ECS/Fargate**, which supports long-lived connections, streaming HTTP responses, and WebSockets natively. A common real pattern: API Gateway for the public edge (auth, throttling) with a VPC Link forwarding to an internal ALB/ECS backend — you get API Gateway's edge features without losing ALB's connection flexibility.
+- **Load balancing specifics**: ALB does layer-7 (HTTP-aware) routing — useful for path-based routing (`/chat` vs `/ingest` vs `/admin` to different target groups) and for weighted routing during canary deploys of a new prompt/model version. Health checks on the target group should hit a lightweight endpoint, not one that itself calls the LLM (a slow model call shouldn't look like an unhealthy node).
+- **Where latency actually accumulates in a RAG request**, in the order it happens: (1) auth/throttle check at the gateway — sub-ms if done right; (2) semantic cache lookup — should be a few ms via ElastiCache, this is the highest-leverage latency win since it skips everything downstream; (3) embedding the query — small, fast if using a lightweight embedding model; (4) vector search — depends on index size and type (HNSW is sub-100ms typically at reasonable scale); (5) reranking, if used — adds real latency since it's a cross-encoder forward pass per candidate, so keep the reranked set small (top 20-50, not top 500); (6) **LLM generation itself — almost always the dominant cost**, split into time-to-first-token (driven by prompt length/prefill) and total generation time (driven by output length and decode speed). Streaming the response back to the client (rather than waiting for the full generation) is the single biggest perceived-latency win available and is worth explicitly designing for at the ALB/compute layer.
+- **Horizontal scaling**: Lambda scales per-request automatically (up to account concurrency limits — worth knowing reserved/provisioned concurrency exists to avoid cold starts on latency-sensitive paths). ECS/Fargate scales via an Auto Scaling policy on the service, usually keyed to CPU/memory or a custom CloudWatch metric like in-flight request count — request count is a better scaling signal for LLM-backed services than CPU, since the bottleneck is usually an external API call (Bedrock), not local compute.
+- **Cost/latency lever specific to Bedrock**: **Provisioned Throughput** (reserved capacity on Bedrock) trades a fixed cost for predictable low latency and no throttling under load — worth mentioning as the production answer to "what if on-demand Bedrock rate limits start throttling us during traffic spikes."
 
 #### Key service choices and why
 
@@ -1415,33 +1429,52 @@ S3 (raw documents: PDFs, HTML, Confluence exports, etc.)
 | Vector store — build your own | **OpenSearch Service** | Most control: hybrid dense+BM25 search, custom index tuning, well-understood at scale |
 | Vector store — managed enterprise search | **Kendra** | Good when you want managed relevance tuning and connectors to enterprise sources (SharePoint, Confluence) out of the box, less low-level control |
 | Vector store — fully managed RAG | **Bedrock Knowledge Bases** | Simplest path: handles chunking, embedding, indexing (backed by OpenSearch Serverless or others), and retrieval in one managed service — good default unless you need very custom retrieval logic |
+| Edge/API layer | **API Gateway** | Auth, throttling, usage plans, request validation — the right default for simple request/response RAG |
+| Edge/API layer — agentic or streaming | **ALB** (+ VPC Link from API Gateway if you want both) | Long-lived connections, streaming, WebSockets — API Gateway alone struggles here |
 | Query orchestration | **Lambda** (simple retrieve-then-generate) or **ECS/Fargate** (multi-step agentic RAG, longer-running orchestration) | Lambda has execution time limits and cold-start considerations — move to Fargate/ECS once the RAG flow becomes agentic (multiple tool calls, longer chains) |
-| Generation | **Bedrock Runtime** (Claude, etc.) | Managed access to foundation models without hosting/serving infra yourself |
+| Generation | **Bedrock Runtime** (Claude, etc.) | Managed access to foundation models without hosting/serving infra yourself; **Provisioned Throughput** if you need guaranteed low latency at scale |
 | Guardrails | **Bedrock Guardrails** | Built-in PII redaction, content filtering, denied-topics enforcement at the platform level |
-| Caching | **ElastiCache (Redis)** | Semantic cache for repeated/similar queries — cuts cost and latency for FAQ-style traffic |
+| Caching | **ElastiCache (Redis)** | Semantic cache for repeated/similar queries — cuts cost and latency for FAQ-style traffic; also the single biggest latency lever in the whole pipeline when hit rate is decent |
 | Auth | **Cognito** (user-facing) + **IAM** (service-to-service, least privilege) | Standard AWS-native auth split between end-user identity and internal service permissions |
 | Observability | **CloudWatch + X-Ray** | Latency/error metrics plus distributed tracing across Lambda/API Gateway/Bedrock hops |
 | Networking | **VPC + PrivateLink** | Keep Bedrock traffic off the public internet for regulated/enterprise deployments |
 
+#### Non-AWS / local alternatives worth knowing (interviewers value knowing when NOT to reach for managed cloud services)
+
+| AWS piece | Non-AWS / local / open-source alternative | When it's the better call |
+|---|---|---|
+| Bedrock Knowledge Bases / Bedrock Runtime | Self-hosted **vLLM** or **TGI (Text Generation Inference)** serving an open-weight model, with a self-hosted vector DB (Qdrant, Weaviate, Milvus, or plain FAISS for smaller scale) | Data residency/privacy requirements that rule out any managed cloud inference; very high, steady-state query volume where self-hosting is cheaper per-token than API calls; on-prem/air-gapped environments |
+| OpenSearch Service | Self-hosted **Qdrant** or **Weaviate** (Docker/Kubernetes) | Smaller teams who want hybrid search without operating full OpenSearch clusters — Qdrant in particular is lighter-weight and easier to run locally/on a single VM for moderate scale |
+| API Gateway + ALB | **Nginx** or **Traefik** as reverse proxy/load balancer, **Kong** or **Envoy** for API gateway features (rate limiting, auth) | Non-AWS deployment (on-prem, another cloud, or local Kubernetes) — these give you the same throttling/auth/routing capabilities without AWS lock-in |
+| Step Functions / EventBridge | **Airflow**, **Prefect**, **Dagster**, or plain **cron** | Team already standardized on one of these, or the pipeline is simple enough that a managed orchestrator is overkill |
+| ElastiCache (Redis) | Self-hosted **Redis** or **Memcached** | Identical functionality, just self-managed — makes sense once you're already self-hosting everything else and don't want a second cloud dependency |
+| SageMaker Training/Batch Transform | Plain **EC2 GPU instances** running training scripts directly, or a local/on-prem GPU box for smaller models | Smaller-scale training jobs where SageMaker's orchestration overhead and per-job startup cost isn't worth it; teams comfortable managing their own training loop and checkpointing |
+| CloudWatch + X-Ray | **Prometheus + Grafana** (metrics), **Jaeger** or **OpenTelemetry** (tracing), **Langfuse/Phoenix** (LLM-specific tracing) | Multi-cloud or on-prem setups, or when you specifically want LLM-native observability (token usage, prompt/completion logging) that generic CloudWatch doesn't give you out of the box |
+
+**The honest framing for an interview**: managed AWS services buy you reduced *operational* burden (someone else runs the cluster, patches it, scales it) — they rarely buy you capability you couldn't get from open-source tooling. The right call depends on team size (small team → lean managed to avoid ops overhead), data sensitivity (regulated/on-prem → self-hosted), query volume economics (very high steady-state volume → self-hosting inference can undercut API pricing), and existing infra commitments (already all-in on Kubernetes elsewhere → self-hosted options fit better than adding a new AWS-specific service to the stack).
+
 **Design notes worth mentioning in an interview:**
 - **Bedrock Knowledge Bases vs "build your own with OpenSearch"** is the central build-vs-buy decision for RAG on AWS — Knowledge Bases gets you to production fast and is a strong default; a custom OpenSearch-based pipeline is justified when you need hybrid search tuning, custom rerankers, or non-standard chunking strategies Knowledge Bases doesn't support
-- RAG serving is **real-time/low-latency**, unlike demand forecasting's batch nature — this drives the choice of Lambda/Fargate + API Gateway instead of batch jobs, and motivates the semantic caching layer
+- RAG serving is **real-time/low-latency**, unlike demand forecasting's batch nature — this drives the choice of Lambda/Fargate + API Gateway/ALB instead of batch jobs, and motivates the semantic caching layer
 - Guardrails and PII handling matter more here than in forecasting, since RAG directly surfaces retrieved document content (and potentially generated text) to end users
+- If asked to optimize an existing, too-slow RAG deployment, the actionable order of attack is usually: (1) add/improve semantic caching, (2) check if you're reranking too many candidates, (3) check if streaming is actually enabled end-to-end (gateway → compute → client), (4) check Bedrock on-demand throttling and consider Provisioned Throughput, (5) only then look at retrieval-side optimizations (smaller/better chunks, fewer results) — because generation latency usually dwarfs retrieval latency
 
-### 21.3 Side-by-Side: Forecasting vs RAG Deployment
+### 20.3 Side-by-Side: Forecasting vs RAG Deployment
 
 | Dimension | Forecasting Pipeline | RAG Pipeline |
 |---|---|---|
 | **Serving pattern** | Batch/scheduled (daily/weekly) | Real-time, low-latency |
 | **Core managed service** | Amazon Forecast | Bedrock Knowledge Bases |
 | **Custom-control alternative** | SageMaker Training + Batch Transform | OpenSearch Service + custom Lambda/Fargate orchestration |
-| **Orchestration** | Step Functions / MWAA | API Gateway + Lambda/Fargate |
+| **Edge/entry point** | None needed (internal batch job) | API Gateway (simple) or ALB (streaming/agentic) |
+| **Orchestration** | Step Functions / MWAA | API Gateway/ALB + Lambda/Fargate |
 | **Trigger** | EventBridge (cron-based retraining) | User request (API call) |
 | **Output store** | S3 / Redshift / DynamoDB | Returned directly to user (optionally logged to S3/CloudWatch) |
-| **Key risk to monitor** | Data/concept drift degrading forecast accuracy | Retrieval quality drift, hallucination, stale index |
+| **Key risk to monitor** | Data/concept drift degrading forecast accuracy | Retrieval quality drift, hallucination, stale index, latency spikes under load |
 | **Primary AWS monitoring tool** | SageMaker Model Monitor | CloudWatch + X-Ray + Bedrock invocation logs |
+| **Non-AWS fallback** | Airflow/Prefect + open-source forecasting libs on EC2/on-prem | Self-hosted vLLM/TGI + Qdrant/Weaviate behind Nginx/Envoy |
 
-**Interview soundbite:** *"Forecasting on AWS is fundamentally a batch pipeline — Amazon Forecast or SageMaker Batch Transform on a scheduled trigger via EventBridge/Step Functions. RAG is fundamentally a real-time serving problem — Bedrock Knowledge Bases or a custom OpenSearch-backed retrieval layer behind API Gateway/Lambda. The architectures differ mainly because one answers a question on a schedule and the other answers a question on demand."*
+**Interview soundbite:** *"Forecasting on AWS is fundamentally a batch pipeline — Amazon Forecast or SageMaker Batch Transform on a scheduled trigger via EventBridge/Step Functions. RAG is fundamentally a real-time serving problem — Bedrock Knowledge Bases or a custom OpenSearch-backed retrieval layer behind API Gateway/ALB. The architectures differ mainly because one answers a question on a schedule and the other answers a question on demand, which is exactly why RAG needs to think hard about API Gateway throttling, load balancing, and streaming, and forecasting doesn't."*
 
 ---
 
@@ -1485,21 +1518,14 @@ S3 (raw documents: PDFs, HTML, Confluence exports, etc.)
 - *"GQA is grouped query attention — middle ground between full MHA (huge KV cache) and MQA (accuracy loss), increasingly common in production models"*
 - *"Graph RAG trades chunking simplicity for structured knowledge + multi-hop reasoning — worth it when docs are dense with relationships"*
 - *"Production systems know when they don't know — fallback handling (don't know, escalate, ask clarifying question) is as important as the happy path"*
-- *"Frontier model choice is task-specific, not all-purpose — Claude Fable 5 leads on coding, Gemini 3.1 Pro leads on scientific reasoning, they trade off differently by domain"*
-- *"Context window explosion (Llama 4 at 10M) flips the tradeoff — chunking matters less now, retrieval precision matters more (lost in the middle with that much context)"*
-- *"Open-weight models have closed the coding gap (MiniMax M2.5 at SWE-bench 80.2%) — decision is now capability-per-dollar self-hosted vs API convenience, not pure capability"*
-- *"Agentic AI is no longer a framework question — frontier models now natively support tool use, planning, multi-step memory. Just define tool schemas and let the model decide"*
-- *"Multimodal is converged (Gemini 3.1 Pro native text/image/audio/video/PDF) — RAG pipelines no longer need separate vision encoders or PDF extraction"*
-- *"Inference-time reasoning scaling (GPT-5, Claude) trades latency for accuracy — useful for reasoning-heavy workloads, not for chat. Know when to trade off"*
-- *"MCP (Model Context Protocol) standardizes how LLMs connect to tools/data sources — moves from inline tool definitions to composable, versioned tool servers"*
-- *"Unlike function calling where tool code is embedded in your app, MCP servers are independent microservices that multiple Claude apps can use"*
-- *"MCP is for production systems with multiple apps needing the same tools — enables code reuse, independent updates, and team-owned tool ownership"*
-- *"MCP supports multiple transports (stdio, HTTP, WebSocket) — start with local subprocess, scale to distributed services without changing tool code"*
 - *"WAPE beats MAPE for demand forecasting — MAPE blows up on near-zero actuals from slow-moving SKUs, WAPE stays stable because it aggregates errors and actuals before dividing"*
 - *"Time series CV must be walk-forward, never random k-fold — random splitting leaks future information into training"*
 - *"Global forecasting models (DeepAR, TFT, feature-based XGBoost) beat per-series ARIMA at scale because they share learned patterns across thousands of related series and handle cold-start better"*
 - *"Point forecasts aren't enough for inventory decisions — quantile/probabilistic forecasts (P50/P90) are what let you translate a forecast into a safety-stock and service-level decision"*
-- *"Forecasting on AWS is a batch pipeline (Amazon Forecast or SageMaker Batch Transform on an EventBridge-triggered schedule); RAG on AWS is a real-time serving problem (Bedrock Knowledge Bases or OpenSearch behind API Gateway/Lambda) — the architectures diverge because one answers on a schedule, the other answers on demand"*
+- *"Forecasting on AWS is a batch pipeline (Amazon Forecast or SageMaker Batch Transform on an EventBridge-triggered schedule); RAG on AWS is a real-time serving problem (Bedrock Knowledge Bases or OpenSearch behind API Gateway/ALB) — the architectures diverge because one answers on a schedule, the other answers on demand"*
 - *"Bedrock Knowledge Bases is the managed 'buy' option for RAG on AWS — handles chunking, embedding, and retrieval end-to-end; OpenSearch Service is the 'build' option when you need custom hybrid search or reranking logic"*
+- *"In a RAG deployment, generation latency (the LLM call itself) almost always dwarfs retrieval latency — so the highest-leverage optimizations are semantic caching and streaming, not shaving milliseconds off vector search"*
+- *"API Gateway is the right default for simple request/response RAG; once the flow becomes agentic or needs streaming/WebSockets, you move to ALB in front of ECS/Fargate — API Gateway alone doesn't handle long-lived connections well"*
+- *"Managed cloud services buy you reduced ops burden, not capability — a self-hosted vLLM + Qdrant stack behind Nginx can do everything Bedrock + OpenSearch does, the decision comes down to data residency, query volume economics, and team size"*
 
 ---
