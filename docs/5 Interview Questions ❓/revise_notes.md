@@ -905,6 +905,7 @@ Benefits:
 **TTFT vs total latency are different problems.** Time-To-First-Token (TTFT) is driven by prompt length/prefill; total generation time is driven by output length/decode speed — measure them separately. **Streaming** (returning tokens as they're generated instead of waiting for the full response) is the single biggest *perceived*-latency win, but it does not reduce actual compute time — it only improves time-to-useful-output. This distinction is frequently the crux of a "how would you make RAG feel faster" interview question.
 
 **Caching, at multiple layers (cheapest wins, apply in this order):**
+
 | Layer | What's cached | Risk |
 |---|---|---|
 | Query embedding cache | Hash(query) → embedding vector, skips re-embedding repeated queries | Low risk, easy win |
