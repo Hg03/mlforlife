@@ -179,6 +179,31 @@ icon: lucide/briefcase
 - **N-BEATS / N-HiTS**: pure deep learning architectures (no recurrence/attention needed) that perform strongly on univariate forecasting benchmarks
 - **PatchTST / Informer**: transformer variants optimized for long-horizon forecasting efficiency
 
+### Model Selection Cheat Sheet: ARIMA vs LSTM vs Prophet
+
+*A fast, defensible answer to "which model would you pick and why" — pick based on data characteristics first, then confirm with evaluation scores, not the other way around.*
+
+| | **ARIMA (/SARIMA)** | **LSTM** | **Prophet** |
+|---|---|---|---|
+| **Best data fit** | Stationary (or differenced-to-stationary), linear relationships | Long-term dependencies, large datasets, non-linear/high-variability patterns, multiple/multivariate inputs | Clear seasonality, missing data, irregular time intervals, holiday/event effects |
+| **Forecast horizon** | Short-term — accuracy degrades as the horizon grows | Can model long-range dependencies given enough data | Good general-purpose horizon, especially with strong seasonal structure |
+| **Seasonality** | Limited (needs SARIMA extension) | Learns it implicitly if present in training data | Explicit first-class support (Fourier terms + holiday regressors) |
+| **Data volume needed** | Works with fairly small series | Needs large datasets to train well — underperforms ARIMA/Prophet on short series | Robust even with gaps/missing data, doesn't need huge volume |
+| **Interpretability** | High (explicit AR/I/MA coefficients) | Low (black box) | Medium (decomposed trend/seasonality/holiday components are inspectable) |
+| **Typical use case** | Stable, linear series — e.g. short-term inventory levels, macro series with mild trend | Stock prices, demand with complex non-linear/volatile patterns, multivariate series (price, weather, promos as extra inputs) | Retail/e-commerce sales with weekly/yearly seasonality, web traffic, anything with holiday spikes |
+
+**Decision heuristic:**
+- Data is stationary + linear + short horizon → **ARIMA/SARIMA**
+- Data is highly non-linear, volatile, or has multiple correlated input signals and you have enough history → **LSTM**
+- Data has strong seasonality, missing/irregular observations, or holiday effects and you want a low-maintenance baseline → **Prophet**
+- Overlapping characteristics (e.g., seasonal **and** non-linear/volatile) → consider a **hybrid/stacked** approach, such as LSTM for the non-linear/long-term signal combined with ARIMA for short-term residual correction, or an ensemble of Prophet (seasonality/holidays) + a residual model for the non-linear leftover.
+
+**Practical workflow (don't skip this):** always run EDA first — check stationarity (ADF/KPSS), seasonality strength, missingness, and data volume — before committing to a model family. Different series (even within the same domain, e.g. different currency pairs or different SKUs) can behave very differently, so the right move is usually to shortlist 2-3 candidate models based on the data profile above, then let held-out evaluation (walk-forward, never random k-fold) make the final call rather than picking a favorite model up front.
+
+**Evaluation caveat — R² on time series:** R² tends to look unusually low for time series models even when the model is doing well. This is because time series data is highly autocorrelated, so a naive baseline (e.g., "predict the last observed value") already explains a large share of the variance, leaving little additional variance for the model to capture. Don't be alarmed by a low R² in isolation — compare against a naive/seasonal-naive baseline (this is exactly what **MASE** does, see below) rather than judging R² on its own.
+
+**Interview soundbite:** *"I don't pick a time series model by intuition — ARIMA fits stationary, linear, short-horizon data; LSTM fits large, non-linear, multivariate series with long-range dependencies; Prophet fits seasonal data with missing values or holiday effects. I confirm the choice with walk-forward evaluation against a naive baseline, and I'll stack models — e.g., Prophet for seasonality plus a residual model for non-linear leftover error — when the data shows overlapping characteristics."*
+
 ### Time-Series-Specific Cross-Validation
 - **Never use random k-fold** — it leaks future information into training (a huge, common mistake)
 - **Walk-forward / rolling-origin validation**: train on data up to time T, validate on T+1...T+h, then slide the origin forward and repeat
@@ -194,6 +219,7 @@ icon: lucide/briefcase
 | **sMAPE** | Symmetric MAPE — attempts to fix MAPE's asymmetry, still has edge cases near zero |
 | **WAPE (Weighted APE)** | Aggregates errors and actuals before dividing — much more stable than MAPE for sparse/low-volume series, very common in demand forecasting |
 | **MASE (Mean Absolute Scaled Error)** | Scale-free — compares model error to a naive (seasonal) forecast's error; MASE < 1 means you're beating the naive baseline |
+| **R²** | Usually low for time series relative to other regression problems — autocorrelated data means a naive last-value baseline already explains much of the variance, so don't treat a low R² alone as a red flag |
 
 **Interview trap:** MAPE breaks down badly on intermittent/low-volume demand data (division by near-zero actuals) — WAPE or MASE is the safer default for demand forecasting eval.
 
@@ -868,6 +894,52 @@ Benefits:
 - **Multi-vector retrieval / parent-child chunking**: retrieve small precise chunks but return the larger parent chunk for context
 - **Metadata filtering**: pre-filter by date/source/category before vector search to narrow search space
 
+### Production Latency Optimization (End-to-End)
+
+*Beyond retrieval-quality tricks above, a working RAG system also has to hit a latency budget. This is the systematic, production-engineering side of RAG optimization — the interview answer that separates "knows RAG concepts" from "has actually run one in production."*
+
+**Where latency actually comes from:** a naive mental model is `total latency ≈ request overhead + retrieval + reranking + prompt/prefill + generation`, but many stages can run in parallel, so profiling — not intuition — must drive optimization. In a real trace, **LLM generation (TTFT + token generation) is almost always the dominant cost**, often 50%+ of total latency, with reranking a distant second and vector search/embedding a small fraction. This is why shaving milliseconds off vector search is rarely the highest-leverage fix.
+
+**Define a latency budget (SLO) before optimizing anything** — e.g. p50 < 1.5s, p95 < 3s, p99 < 5s — and break it into a per-stage budget (embedding, retrieval, reranking, prompt build, TTFT, generation). Always track **p50/p95/p99**, not just the average: an average can look fine while a meaningful tail of users has a terrible experience (95 users at 1s + 5 users at 10s still "looks okay" on average).
+
+**TTFT vs total latency are different problems.** Time-To-First-Token (TTFT) is driven by prompt length/prefill; total generation time is driven by output length/decode speed — measure them separately. **Streaming** (returning tokens as they're generated instead of waiting for the full response) is the single biggest *perceived*-latency win, but it does not reduce actual compute time — it only improves time-to-useful-output. This distinction is frequently the crux of a "how would you make RAG feel faster" interview question.
+
+**Caching, at multiple layers (cheapest wins, apply in this order):**
+| Layer | What's cached | Risk |
+|---|---|---|
+| Query embedding cache | Hash(query) → embedding vector, skips re-embedding repeated queries | Low risk, easy win |
+| Semantic query cache | Similar (not identical) queries reuse cached embedding/results via a similarity threshold | Threshold too loose → wrong reuse; must be tuned empirically |
+| Retrieved-results cache | Query → top-k doc IDs, skips the vector DB round-trip | Staleness if the knowledge base changes — key must include KB/embedding-model version |
+| Full LLM answer cache | Question → final answer, skips the whole pipeline | Dangerous for dynamic/time-sensitive info; needs explicit invalidation when source docs change |
+| Prompt/prefix (KV) caching | Reused system-prompt/instruction prefixes reuse cached KV state at the inference layer | Infra-level; effective for repeated system prompts, less so for highly variable prefixes |
+
+**Retrieval-side latency levers:**
+- **ANN over exact search**: HNSW/IVF/PQ trade a small amount of recall for large speedups over brute-force nearest neighbor at scale (millions of vectors) — tune ANN parameters against a recall/latency benchmark, don't just pick the fastest setting.
+- **Metadata filtering before vector search**: narrowing 10M vectors down to a tenant/department-scoped subset before the ANN search improves both relevance and latency.
+- **Hybrid retrieval (dense + BM25) run in parallel, not sequentially**: `max(dense, bm25)` instead of `dense + bm25` — a straightforward async/concurrency win that's easy to miss if retrieval calls are written sequentially.
+- **Query rewriting/multi-query fusion adds real latency** (an extra LLM call before retrieval even starts) — only justified if it measurably improves *end-to-end* answer quality, not just an offline retrieval metric.
+
+**Reranking discipline:** rerankers (cross-encoders) are accurate but slow — the common mistake is reranking too many candidates (e.g., reranking all 1000 retrieved instead of the top 50). Use a **confidence-gated reranker**: skip reranking when first-stage retrieval scores are already high-confidence, only invoke the reranker on ambiguous cases. Right-size retrieve→rerank→keep counts (e.g., 50→20→5) via evaluation, not by default.
+
+**Context and prompt size control:** the goal isn't "give the LLM as much context as possible," it's "give it the smallest amount of high-quality context needed" — more chunks means longer prefill (higher TTFT, higher cost) and a worse lost-in-the-middle risk. This extends to **conversation history**: sending the full multi-turn history on every request grows unboundedly; summarize/compress older turns and keep only recent turns + relevant memory.
+
+**Model-side levers:** **model routing** (small/fast model for simple queries, large model reserved for complex ones) is usually the biggest cost/latency lever after eliminating unnecessary pipeline stages. **Quantization** and **speculative decoding** matter for self-hosted serving but are advanced/late-stage optimizations — apply after the simpler wins (model choice, prompt size, caching, serving config) are exhausted.
+
+**Infra and reliability:** colocate latency-sensitive services in the same region, use connection pooling/persistent connections/async I/O to avoid sequential network round-trips, and pre-warm models/connections to avoid cold-start latency spikes. Use bounded retries with timeouts and circuit breakers — an unbounded retry against an unhealthy dependency can silently consume the entire latency budget. Design graceful degradation (reranker times out → fall back to raw retrieval order; primary model unavailable → fall back to a smaller model) rather than letting one dependency fail the whole request.
+
+**The optimization hierarchy (apply in this order, cheapest/highest-leverage first):**
+1. **Eliminate work** — cache hits, skip RAG entirely for simple/greeting queries, skip reranking when unnecessary
+2. **Parallelize work** — run dense + BM25 + metadata lookups concurrently instead of sequentially
+3. **Reduce work** — smaller context, smaller top-k, shorter prompts, trimmed history
+4. **Make the remaining work faster** — ANN, GPU serving, quantization, continuous batching
+5. **Improve perceived latency** — streaming, progressive UI feedback
+
+**Observability is what makes any of this possible.** Instrument every stage of the pipeline individually (embedding, dense search, BM25, fusion, reranking, document fetch, prompt build, TTFT, generation) so that "RAG is slow" becomes "reranking is 40% of p95 latency" instead of a guessing exercise. Without per-stage tracing, engineers tend to optimize the wrong thing (e.g., the vector DB) while the LLM generation call — which usually dominates — goes unexamined.
+
+**Interview soundbite:** *"I wouldn't start by asking which vector database is fastest — I'd instrument the full pipeline, establish a p95/p99 latency budget, and find the actual bottleneck first. In most RAG systems that's LLM generation, not retrieval, so the highest-leverage fixes are usually eliminating unnecessary pipeline stages, caching, and streaming — not micro-optimizing vector search."*
+
+**Common mistakes to flag proactively:** optimizing before profiling (assuming vector search is the bottleneck without measuring); increasing top-k to chase recall without accounting for the added reranking/prompt cost; sending the entire conversation history and full retrieved context to the LLM by default; assuming streaming reduces total compute time (it only improves perceived latency); and optimizing only p50 while p99 users silently have a much worse experience.
+
 ### Fallback Behaviors (Production Reality)
 When retrieval fails or returns low-confidence results:
 
@@ -1056,7 +1128,7 @@ LLM/RAG systems are non-deterministic and can fail silently (hallucination, retr
 | **P50 fine, P99 terrible** | Tail latency — one slow dependency blocking, GC pause, a hot/overloaded shard | Trace individual slow requests, not aggregates; check for retries without timeouts | Timeouts + circuit breakers on downstream calls, shard rebalancing, isolate noisy neighbors |
 | **Latency degraded gradually over weeks**, no code change | Index growth past ANN sweet spot, traffic pattern shift, silent chunk-count creep | Compare index size/query volume now vs when it was fast; check if a routing/chunk-count parameter drifted | Reindex/reshard the vector DB, re-tune HNSW parameters, audit config drift |
 
-**Interview soundbite:** *"In a RAG or agent pipeline, generation latency almost always dominates — so the highest-leverage fixes are semantic caching and streaming, not shaving milliseconds off vector search."*
+**Interview soundbite:** *"In a RAG or agent pipeline, generation latency almost always dominates — so the highest-leverage fixes are semantic caching and streaming, not shaving milliseconds off vector search."* (See Section 12's "Production Latency Optimization" for the full end-to-end breakdown and optimization order.)
 
 ### 3. Cost Blowups
 
@@ -1522,6 +1594,8 @@ S3 (raw documents: PDFs, HTML, Confluence exports, etc.)
 - *"Time series CV must be walk-forward, never random k-fold — random splitting leaks future information into training"*
 - *"Global forecasting models (DeepAR, TFT, feature-based XGBoost) beat per-series ARIMA at scale because they share learned patterns across thousands of related series and handle cold-start better"*
 - *"Point forecasts aren't enough for inventory decisions — quantile/probabilistic forecasts (P50/P90) are what let you translate a forecast into a safety-stock and service-level decision"*
+- *"Model selection in time series is a data-fit decision first, evaluation-score decision second: ARIMA for stationary/linear/short-horizon, LSTM for large non-linear/multivariate series with long dependencies, Prophet for seasonal data with missing values or holiday effects — and R² alone is a poor signal for time series because autocorrelated data already gives a naive baseline a head start"*
+- *"In production RAG, the single biggest latency lever is almost always eliminating or caching work, not making retrieval faster — the optimization hierarchy is eliminate, parallelize, reduce, speed up, then improve perceived latency via streaming"*
 - *"Forecasting on AWS is a batch pipeline (Amazon Forecast or SageMaker Batch Transform on an EventBridge-triggered schedule); RAG on AWS is a real-time serving problem (Bedrock Knowledge Bases or OpenSearch behind API Gateway/ALB) — the architectures diverge because one answers on a schedule, the other answers on demand"*
 - *"Bedrock Knowledge Bases is the managed 'buy' option for RAG on AWS — handles chunking, embedding, and retrieval end-to-end; OpenSearch Service is the 'build' option when you need custom hybrid search or reranking logic"*
 - *"In a RAG deployment, generation latency (the LLM call itself) almost always dwarfs retrieval latency — so the highest-leverage optimizations are semantic caching and streaming, not shaving milliseconds off vector search"*
