@@ -26,17 +26,17 @@ class Solution:
     def twoSum_sorted(self, nums: List[int], target: int) -> List[int]:
 		    # When array is sorted
         left_pointer = 0
-		    right_pointer = len(numbers) - 1
-		    while left_pointer < right_pointer:
-		        current_sum = numbers[left_pointer] + numbers[right_pointer]
-		        if current_sum == target_sum:
-		            return True
-		        if current_sum < target_sum:
-		            left_pointer += 1
-		        else:
-		            right_pointer -= 1
+		right_pointer = len(numbers) - 1
+		while left_pointer < right_pointer:
+			current_sum = numbers[left_pointer] + numbers[right_pointer]
+			if current_sum == target_sum:
+				return True
+			if current_sum < target_sum:
+				left_pointer += 1
+			else:
+				right_pointer -= 1
 
-		    return False
+		return False
 ```
 
 ## [Best Time to Buy and Sell Stocks](https://leetcode.com/problems/best-time-to-buy-and-sell-stock/)
