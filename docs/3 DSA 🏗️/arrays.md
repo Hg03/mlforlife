@@ -13,7 +13,7 @@ In most interviews, Data Structure and Algorithms revolves around array only wit
 ```python
 class Solution:
     def twoSum(self, nums: List[int], target: int) -> List[int]:
-		    # When sorting is not allowed
+		# When sorting is not allowed
         hashMap = {}
         for i in range(len(nums)):
             complement = target - nums[i]
@@ -24,7 +24,7 @@ class Solution:
         return [-1, -1]
     
     def twoSum_sorted(self, nums: List[int], target: int) -> List[int]:
-		    # When array is sorted
+		# When array is sorted
         left_pointer = 0
 		right_pointer = len(numbers) - 1
 		while left_pointer < right_pointer:
