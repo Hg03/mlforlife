@@ -864,6 +864,9 @@ Benefits:
 **Vector DB selection:**
 - Scale (millions vs billions of vectors), filtering needs (metadata filters), managed vs self-hosted, latency SLAs
 
+<img width="1440" height="712" alt="image" src="https://github.com/user-attachments/assets/6d688657-9bd8-4476-bafb-5c84229ec20b" />
+
+
 **Evaluation-driven selection**: always A/B test candidate models against a labeled eval set using retrieval metrics (below) — don't pick based on marketing benchmarks alone.
 
 ### RAG Optimizations
@@ -1055,6 +1058,7 @@ LLM/RAG systems are non-deterministic and can fail silently (hallucination, retr
 - Tools: **LangSmith, Langfuse, Arize Phoenix, Weights & Biases (Weave), Helicone**
 
 **Key production metrics:**
+
 | Metric | Purpose |
 |---|---|
 | Latency (p50/p95/p99) | User experience, especially time-to-first-token |
