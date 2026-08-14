@@ -1100,6 +1100,9 @@ LLM/RAG systems are non-deterministic and can fail silently (hallucination, retr
 - Output guardrails: toxicity filtering, schema validation, hallucination scoring before returning to user
 - Tools: Guardrails AI, NeMo Guardrails, custom regex/classifier layers
 
+<img width="1080" height="716" alt="image" src="https://github.com/user-attachments/assets/7fc3534e-f235-4894-a3e5-fa7992c48baa" />
+
+
 ---
 
 ## 17. Failure Diagnosis Playbooks
